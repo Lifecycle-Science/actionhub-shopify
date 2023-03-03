@@ -9,6 +9,8 @@ import {
 import { QRCodeIndex } from "../components";
 import { useAppQuery } from "../hooks";
 
+import { ProgramCard } from "../components";
+
 export default function HomePage() {
   /*
     Add an App Bridge useNavigate hook to set up the navigate function.
@@ -73,14 +75,15 @@ const {
   return (
     <Page fullWidth={!!qrCodesMarkup}>
       <TitleBar
-        title="QR codes"
-        primaryAction={{
-          content: "Create QR code",
-          onAction: () => navigate("/qrcodes/new"),
-        }}
+        title="Program Overview"
+        // primaryAction={{
+        //   content: "Create QR code",
+        //   onAction: () => navigate("/qrcodes/new"),
+        // }}
       />
       <Layout>
         <Layout.Section>
+          <ProgramCard />
           {loadingMarkup}
           {emptyStateMarkup}
           {qrCodesMarkup}
