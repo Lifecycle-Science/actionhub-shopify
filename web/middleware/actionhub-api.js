@@ -143,4 +143,30 @@ export default function applyQrCodeApiEndpoints(app) {
       res.status(200).send();
     }
   });
+
+  /*
+  ActionHub api calls...
+  */
+
+  app.get("/api/program", async (req, res) => {
+
+    const host = "https://api.actionhub.ai/";
+    const resource = "program";
+
+    // TODO: get the real one
+    const actionHubKey = "5e0ff226-6043-4c4a-bbfb-8ea0d7968263";
+    // TODO: get the real one
+    const programId = "fashion_campus";
+    const url = host + resource;
+
+    const response = await fetch(url, {
+        headers: {
+            "actionhub-key": actionHubKey,
+            "program-id": programId
+        }
+    });
+    const data = await response.json();
+    res.status(200).send(data);
+    
+  });
 }

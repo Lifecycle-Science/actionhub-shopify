@@ -15,11 +15,12 @@ export default function QRCodeEdit() {
     The backend supplements app data with data queried from the Shopify GraphQL Admin API.
   */
   const {
-    data: QRCode,
+    data: program,
     isLoading,
     isRefetching,
   } = useAppQuery({
-    url: `/api/qrcodes/${id}`,
+//    url: `/api/qrcodes/${id}`,
+    url: `/api/program`,
     reactQueryOptions: {
       /* Disable refetching because the QRCodeForm component ignores changes to its props */
       refetchOnReconnect: false,
@@ -67,8 +68,12 @@ export default function QRCodeEdit() {
         title="Edit QR code"
         breadcrumbs={breadcrumbs}
         primaryAction={null}
-      />
-      <QRCodeForm QRCode={QRCode} />
+      />  
+       
+      { program.program_id }   
+      { program.program_name }   
+      
+      {/* <QRCodeForm QRCode={QRCode} /> */}
     </Page>
   );
 }
