@@ -29,7 +29,7 @@ export function ProgramCard() {
   return (
     <>
       <Card
-        title="Program Details"
+        title={"Merchant Program: " + program?.program_name}
         sectioned
         primaryFooterAction={null}
       >

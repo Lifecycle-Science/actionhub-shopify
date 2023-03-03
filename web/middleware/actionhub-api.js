@@ -147,6 +147,46 @@ export default function applyQrCodeApiEndpoints(app) {
   /*
   ActionHub api calls...
   */
+  app.get('/api/segments/sync', async (req, res) => {
+    const client = new shopify.api.clients.Graphql({
+      session: res.locals.shopify.session,
+    });
+
+    const METADATA_QUERY = {
+      data: {query: `
+      mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
+        metafieldDefinitionCreate(definition: $definition) {
+          createdDefinition {
+            id
+            name
+          }
+          userErrors {
+            field
+            message
+            code
+          }
+        }
+      }
+      
+        `,
+      variables: 
+      {
+        "definition": {
+          "name": "ActionHub Order Actions",
+          "namespace": "actionhub",
+          "key": "order_actions",
+          "description": "[DO NOT EDIT - required for ActionHub] A list of recommended product order actions.",
+          "type": "list.single_line_text_field",
+          "ownerType": "CUSTOMER"
+        }
+      }
+    
+    }
+    }
+    const response = await client.query(METADATA_QUERY);
+    console.log(response.headers, response.body)
+  });
+
 
   app.get("/api/program", async (req, res) => {
 
