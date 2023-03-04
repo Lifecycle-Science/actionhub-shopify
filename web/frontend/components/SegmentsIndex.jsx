@@ -21,57 +21,71 @@ export function SegmentsIndex () {
   const segments = [
     {
       id: 'label-casual',
-      type: 'Tag',
+      action_type: 'buy',
+      segment_type: 'growth',
+      segment_basis: 'tag',
       name: 'Casual',
-      users: 55,
+      user_count: 55,
       strength: 90.2,
       status: 'new'
     },
     {
       id: 'label-topwear',
-      type: 'Tag',
+      action_type: 'buy',
+      segment_type: 'growth',
+      segment_basis: 'tag',
       name: 'Topwear',
-      users: 52,
+      user_count: 52,
       strength: 89.1,
       status: 'new'
     },
     {
       id: 'label-dresses',
-      type: 'Tag',
+      action_type: 'buy',
+      segment_type: 'growth',
+      segment_basis: 'tag',
       name: 'Dresses',
-      users: 32,
+      user_count: 32,
       strength: 84.5,
       status: 'new'
     },
     {
       id: 'label-formal',
-      type: 'Tag',
+      action_type: 'buy',
+      segment_type: 'growth',
+      segment_basis: 'tag',
       name: 'Formal',
-      users: 23,
+      user_count: 23,
       strength: 79.9,
       status: 'new'
     },
     {
       id: 'asset-2143',
-      type: 'Product',
+      action_type: 'buy',
+      segment_type: 'growth',
+      segment_basis: 'product',
       name: 'Basics Men Blue Striped Polo T-shirt',
-      users: 34,
+      user_count: 34,
       strength: 89.3,
       status: 'new'
     },
     {
       id: 'asset-31358',
-      type: 'Product',
+      action_type: 'buy',
+      segment_type: 'growth',
+      segment_basis: 'product',
       name: 'Locomotive Brown Printed T-Shirt',
-      users: 26,
+      user_count: 26,
       strength: 72.5,
       status: 'new'
     },
     {
       id: 'asset-1995',
-      type: 'Product',
+      action_type: 'buy',
+      segment_type: 'growth',
+      segment_basis: 'product',
       name: 'ADIDAS Mens Crew Red T-shirt',
-      users: 12,
+      user_count: 12,
       strength: 6.1,
       status: 'new'
     }
@@ -130,7 +144,7 @@ export function SegmentsIndex () {
   );
 
   const rowMarkup = segments.map(
-    ({ id, type, name, users, strength, status }, index) => (
+    ({ id, action_type, segment_basis, name, user_count, strength, status }, index) => (
       <IndexTable.Row
         id={id}
         key={id}
@@ -140,12 +154,12 @@ export function SegmentsIndex () {
         <IndexTable.Cell>{id}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant='bodyMd' as='div'>
-            {type} &gt; {name}
+          {action_type} &gt; {segment_basis} &gt; {name}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant='bodyMd' as='span' alignment='end' numeric>
-            {users}
+            {user_count}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>

@@ -85,20 +85,22 @@ export default function HomePage () {
       />
       <Layout>
         <Layout.Section>
-          <SegmentsIndex />
 
-          {loadingMarkup}
-          {emptyStateMarkup}
-          {qrCodesMarkup}
+        <ProgramCard />
         </Layout.Section>
         <Layout.Section secondary>
-          <ProgramCard />
 
           <LegacyCard title='About ActionHub Segments' sectioned>
             <p>[Help text goes here]</p>
           </LegacyCard>
         </Layout.Section>
       </Layout>
+      <div style={{paddingTop: "24px"}}>
+      <SegmentsIndex />
+      {loadingMarkup}
+          {emptyStateMarkup}
+          {qrCodesMarkup}
+          </div>
     </Page>
   )
 }
