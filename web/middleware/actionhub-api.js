@@ -166,9 +166,7 @@ export default function applyQrCodeApiEndpoints(app) {
             code
           }
         }
-      }
-      
-        `,
+      } `,
       variables: 
       {
         "definition": {

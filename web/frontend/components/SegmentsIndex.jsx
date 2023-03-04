@@ -6,16 +6,18 @@ import {
   Select,
   Button,
   ButtonGroup,
-  Modal
+  Modal,
+  EmptySearchResult
 } from '@shopify/polaris'
 import React from 'react'
 import { useState, useCallback } from 'react'
 import { useAppQuery, useAuthenticatedFetch } from '../hooks'
 
 export function SegmentsIndex () {
-  const [confirmSync, setConfirmSync] = useState(false)
-  const [segmentType, setSegmentType] = useState(false)
+    const [confirmSync, setConfirmSync] = useState(false)
+    const [confirmRefresh, setConfirmRefresh] = useState(false)
 
+    // const segments = []
   const segments = [
     {
       id: 'label-casual',
@@ -75,13 +77,22 @@ export function SegmentsIndex () {
     }
   ]
 
-  const [selected, setSelected] = useState('labels')
-
-  const handleSelectChange = useCallback(value => setSelected(value), [])
   const handleSyncButton = useCallback(value => setConfirmSync(true), [])
   const handleSyncClose = useCallback(value => setConfirmSync(false), [])
+  const handleSyncLearnMore = useCallback(value => {
+    window.open('https://docs.actionhub.ai', '_blank')
+  }, [])
 
-  /* the big one */
+  const handleRefreshButton = useCallback(value => setConfirmRefresh(true), [])
+  const handleRefreshClose = useCallback(value => setConfirmRefresh(false), [])
+  const handleRefreshLearnMore = useCallback(value => {
+    window.open('https://docs.actionhub.ai', '_blank')
+  }, [])
+
+  const handleRefreshSegments = useCallback(value => {
+    console.log(value)
+  }, [])
+
   const handleSyncSegments = useCallback(value => {
     console.log(value)
   }, [])
@@ -110,6 +121,14 @@ export function SegmentsIndex () {
     handleSelectionChange
   } = useIndexResourceState(segments)
 
+  const emptyStateMarkup = (
+    <EmptySearchResult
+      title={'No segments yet'}
+      description={"Hit the 'Refresh' button above to calculate new segments"}
+      withIllustration
+    />
+  );
+
   const rowMarkup = segments.map(
     ({ id, type, name, users, strength, status }, index) => (
       <IndexTable.Row
@@ -120,7 +139,7 @@ export function SegmentsIndex () {
       >
         <IndexTable.Cell>{id}</IndexTable.Cell>
         <IndexTable.Cell>
-          <Text variant='bodyMd' as='span'>
+          <Text variant='bodyMd' as='div'>
             {type} &gt; {name}
           </Text>
         </IndexTable.Cell>
@@ -144,17 +163,13 @@ export function SegmentsIndex () {
       <LegacyCard>
         <div style={{ padding: '12px', display: 'flex' }}>
           <div style={{ paddingRight: '24px', flex: 1 }}>
-            <Select
-              labelInline
-              label='Segment Type:'
-              options={options}
-              onChange={handleSelectChange}
-              value={selected}
-            />
+           <Text variant="headingLg" as="h5">
+            Select segments to sync
+           </Text>
           </div>
           <div>
             <ButtonGroup>
-              <Button>Refresh</Button>
+              <Button onClick={handleRefreshButton}>Refresh</Button>
               <Button
                 disabled={selectedResources.length == 0}
                 primary
@@ -172,6 +187,7 @@ export function SegmentsIndex () {
             allResourcesSelected ? 'All' : selectedResources.length
           }
           onSelectionChange={handleSelectionChange}
+          emptyState={emptyStateMarkup}
           headings={[
             { id: 'id', title: 'Segment Id' },
             { id: 'name', title: 'Segment Name' },
@@ -184,7 +200,7 @@ export function SegmentsIndex () {
                   fontWeight='medium'
                   alignment='end'
                 >
-                  Customer count
+                  Customers
                 </Text>
               )
             },
@@ -197,7 +213,7 @@ export function SegmentsIndex () {
                   fontWeight='medium'
                   alignment='end'
                 >
-                  Segment Strength
+                   Strength
                 </Text>
               )
             },
@@ -212,7 +228,7 @@ export function SegmentsIndex () {
         <Modal
           open={confirmSync}
           onClose={handleSyncClose}
-          title='Confirm Sync Selected Segments?'
+          title='Confirm: Sync Selected Segments?'
           primaryAction={{
             content: 'Do it!',
             onAction: handleSyncSegments
@@ -220,7 +236,7 @@ export function SegmentsIndex () {
           secondaryActions={[
             {
               content: 'Learn more',
-              onAction: handleSyncClose
+              onAction: handleSyncLearnMore
             }
           ]}
         >
@@ -228,6 +244,32 @@ export function SegmentsIndex () {
             <Text>
               ActionHub will create the following customer segments for use in
               your marketing channels: <b>{selectedResources.join(', ')}</b>
+            </Text>
+          </Modal.Section>
+        </Modal>
+      </div>
+
+      <div style={{ height: '500px' }}>
+        <Modal
+          open={confirmRefresh}
+          onClose={handleRefreshClose}
+          title='Confirm: Refresh Store Segments?'
+          primaryAction={{
+            content: 'Do it!',
+            onAction: handleRefreshSegments
+          }}
+          secondaryActions={[
+            {
+              content: 'Learn more',
+              onAction: handleRefreshLearnMore
+            }
+          ]}
+        >
+          <Modal.Section>
+            <Text>
+              This action will reprocess user recommendations
+              and refenerate all user segments. This process could take
+              a few minutes to complete. 
             </Text>
           </Modal.Section>
         </Modal>

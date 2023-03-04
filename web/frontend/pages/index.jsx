@@ -4,7 +4,8 @@ import {
   EmptyState,
   Layout,
   Page,
-  SkeletonBodyText
+  SkeletonBodyText,
+  LegacyCard
 } from '@shopify/polaris'
 import { QRCodeIndex } from '../components'
 import { useAppQuery } from '../hooks'
@@ -74,7 +75,7 @@ export default function HomePage () {
     and include the empty state contents set above.
   */
   return (
-    <Page fullWidth={!!qrCodesMarkup}>
+    <Page fullWidth>
       <TitleBar
         title='Growth Segments'
         // primaryAction={{
@@ -85,10 +86,17 @@ export default function HomePage () {
       <Layout>
         <Layout.Section>
           <SegmentsIndex />
-          <ProgramCard />
+
           {loadingMarkup}
           {emptyStateMarkup}
           {qrCodesMarkup}
+        </Layout.Section>
+        <Layout.Section secondary>
+          <ProgramCard />
+
+          <LegacyCard title='About ActionHub Segments' sectioned>
+            <p>[Help text goes here]</p>
+          </LegacyCard>
         </Layout.Section>
       </Layout>
     </Page>

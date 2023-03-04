@@ -4,7 +4,7 @@ import Routes from "./Routes";
 import {
   AppBridgeProvider,
   QueryProvider,
-  PolarisProvider,
+  PolarisProvider
 } from "./components";
 
 export default function App() {
