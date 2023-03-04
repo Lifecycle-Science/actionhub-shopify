@@ -1,44 +1,46 @@
-import { useNavigate, TitleBar, Loading } from "@shopify/app-bridge-react";
+import { useNavigate, TitleBar, Loading } from '@shopify/app-bridge-react'
 import {
   Card,
   EmptyState,
   Layout,
   Page,
   SkeletonBodyText,
-} from "@shopify/polaris";
-import { QRCodeIndex } from "../components";
-import { useAppQuery } from "../hooks";
+  LegacyCard
+} from '@shopify/polaris'
+import { QRCodeIndex } from '../components'
+import { useAppQuery } from '../hooks'
 
-import { ProgramCard } from "../components";
+import { ProgramCard } from '../components'
+import { SegmentsIndex } from '../components'
 
-export default function HomePage() {
+export default function HomePage () {
   /*
     Add an App Bridge useNavigate hook to set up the navigate function.
     This function modifies the top-level browser URL so that you can
     navigate within the embedded app and keep the browser in sync on reload.
   */
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-/* useAppQuery wraps react-query and the App Bridge authenticatedFetch function */
-const {
-  data: QRCodes,
-  isLoading,
+  /* useAppQuery wraps react-query and the App Bridge authenticatedFetch function */
+  const {
+    data: QRCodes,
+    isLoading,
 
-  /*
+    /*
     react-query provides stale-while-revalidate caching.
     By passing isRefetching to Index Tables we can show stale data and a loading state.
     Once the query refetches, IndexTable updates and the loading state is removed.
     This ensures a performant UX.
   */
-  isRefetching,
-} = useAppQuery({
-  url: "/api/qrcodes",
-});
+    isRefetching
+  } = useAppQuery({
+    url: '/api/qrcodes'
+  })
 
   /* Set the QR codes to use in the list */
   const qrCodesMarkup = QRCodes?.length ? (
     <QRCodeIndex QRCodes={QRCodes} loading={isRefetching} />
-  ) : null;
+  ) : null
 
   /* loadingMarkup uses the loading component from AppBridge and components from Polaris  */
   const loadingMarkup = isLoading ? (
@@ -46,49 +48,57 @@ const {
       <Loading />
       <SkeletonBodyText />
     </Card>
-  ) : null;
+  ) : null
 
   /* Use Polaris Card and EmptyState components to define the contents of the empty state */
   const emptyStateMarkup =
     !isLoading && !QRCodes?.length ? (
       <Card sectioned>
         <EmptyState
-          heading="Create unique QR codes for your product"
+          heading='Create unique QR codes for your product'
           /* This button will take the user to a Create a QR code page */
           action={{
-            content: "Create QR code",
-            onAction: () => navigate("/qrcodes/new"),
+            content: 'Create QR code',
+            onAction: () => navigate('/qrcodes/new')
           }}
-          image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+          image='https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png'
         >
           <p>
             Allow customers to scan codes and buy products using their phones.
           </p>
         </EmptyState>
       </Card>
-    ) : null;
+    ) : null
 
   /*
     Use Polaris Page and TitleBar components to create the page layout,
     and include the empty state contents set above.
   */
   return (
-    <Page fullWidth={!!qrCodesMarkup}>
+    <Page fullWidth>
       <TitleBar
-        title="Program Overview"
+        title='Growth Segments'
         // primaryAction={{
-        //   content: "Create QR code",
+        //   content: "Refresh Segments",
         //   onAction: () => navigate("/qrcodes/new"),
         // }}
       />
       <Layout>
         <Layout.Section>
-          <ProgramCard />
+          <SegmentsIndex />
+
           {loadingMarkup}
           {emptyStateMarkup}
           {qrCodesMarkup}
         </Layout.Section>
+        <Layout.Section secondary>
+          <ProgramCard />
+
+          <LegacyCard title='About ActionHub Segments' sectioned>
+            <p>[Help text goes here]</p>
+          </LegacyCard>
+        </Layout.Section>
       </Layout>
     </Page>
-  );
+  )
 }

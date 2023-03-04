@@ -1,10 +1,6 @@
 import { useState } from "react";
 import {
-  Card,
-  Heading,
-  TextContainer,
-  DisplayText,
-  TextStyle,
+  LegacyCard,
 } from "@shopify/polaris";
 import { Toast } from "@shopify/app-bridge-react";
 import { useAppQuery, useAuthenticatedFetch } from "../hooks";
@@ -28,29 +24,19 @@ export function ProgramCard() {
 
   return (
     <>
-      <Card
-        title="Program Details"
+      <LegacyCard
+        title={"Merchant Program: " + program?.program_name}
         sectioned
         primaryFooterAction={null}
       >
-        <TextContainer spacing="loose">
+
           <p>
-            Sample products are created with a default title and price. You can
-            remove them at any time.
+            [Some details about the program go here]
           </p>
-          <Heading element="h4">
-            
-            <DisplayText size="medium">
-              <TextStyle variation="strong">
-              </TextStyle>
-            </DisplayText>
-          </Heading>
-
-          {isLoading ? "-" : program.program_id}
-
-
-        </TextContainer>
-      </Card>
+        <p>
+          program id: {isLoading ? "-" : program.program_id}
+          </p>
+      </LegacyCard>
     </>
   );
 }
