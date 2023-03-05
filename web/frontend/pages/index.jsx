@@ -97,9 +97,9 @@ export default function HomePage () {
       </Layout>
       <div style={{paddingTop: "24px"}}>
       <SegmentsIndex />
-      {loadingMarkup}
-          {emptyStateMarkup}
-          {qrCodesMarkup}
+      {/* {loadingMarkup}
+      {emptyStateMarkup}
+      {qrCodesMarkup} */}
           </div>
     </Page>
   )
