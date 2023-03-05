@@ -1,4 +1,5 @@
 // @ts-check
+import 'dotenv/config';
 import { join } from "path";
 import { readFileSync } from "fs";
 import express from "express";
@@ -7,6 +8,7 @@ import serveStatic from "serve-static";
 import shopify from "./shopify.js";
 import GDPRWebhookHandlers from "./gdpr.js";
 
+import applyActionHubEndpoints from './middleware/actionhub-api.js';
 
 // TODO: get rid of these
 import applyQrCodeApiEndpoints from "./middleware/actionhub-api.js";
@@ -42,7 +44,7 @@ app.use("/api/*", shopify.validateAuthenticatedSession());
 app.use(express.json());
 
 // TODO: get rid of this
-applyQrCodeApiEndpoints(app);
+applyActionHubEndpoints(app);
 
 app.use(serveStatic(STATIC_PATH, { index: false }));
 

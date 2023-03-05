@@ -14,7 +14,7 @@
   "dependencies": {
     "@shopify/app": "^3.44.1",
     "@shopify/cli": "^3.44.1",
-    "@shopify/shopify-app-session-storage-sqlite": "^1.2.0",
+    "pg": "^8.9.0",
     "react": "17.0.2",
     "sqlite3": "^5.0.8"
   },

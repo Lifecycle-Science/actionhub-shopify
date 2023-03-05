@@ -1,6 +1,9 @@
+import 'dotenv/config';
 import { LATEST_API_VERSION } from "@shopify/shopify-api";
 import { shopifyApp } from "@shopify/shopify-app-express";
-import { SQLiteSessionStorage } from "@shopify/shopify-app-session-storage-sqlite";
+
+import { PostgreSQLSessionStorage } from '@shopify/shopify-app-session-storage-postgresql';
+
 let { restResources } = await import(
   `@shopify/shopify-api/rest/admin/${LATEST_API_VERSION}`
 );
@@ -10,10 +13,6 @@ import { join } from "path";
 import { QRCodesDB } from "./qr-codes-db.js";
 
 const database = new sqlite3.Database(join(process.cwd(), "database.sqlite"));
-const sessionDb = new SQLiteSessionStorage(database);
-// Initialize SQLite DB
-
-console.log(database);
 QRCodesDB.db = database;
 QRCodesDB.init();
 
@@ -28,7 +27,12 @@ const shopify = shopifyApp({
   webhooks: {
     path: "/api/webhooks",
   },
-  sessionStorage: sessionDb,
+  sessionStorage: PostgreSQLSessionStorage.withCredentials(
+    process.env.AWS_AURORA_DB_HOST,
+    process.env.AWS_AURORA_DB_DATABASE,
+    process.env.AWS_AURORA_DB_USERNAME,
+    process.env.AWS_AURORA_DB_PASSWORD
+  ),
 });
 
 export default shopify;
