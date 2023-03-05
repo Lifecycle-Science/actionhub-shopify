@@ -14,82 +14,22 @@ import { useState, useCallback } from 'react'
 import { useAppQuery, useAuthenticatedFetch } from '../hooks'
 
 export function SegmentsIndex () {
-    const [confirmSync, setConfirmSync] = useState(false)
-    const [confirmRefresh, setConfirmRefresh] = useState(false)
+  const [confirmSync, setConfirmSync] = useState(false)
+  const [confirmRefresh, setConfirmRefresh] = useState(false)
+  const [segmentBasis, setSegmentBasis] = useState('labels')
+  const [forceRefresh, setForceRefresh] = useState(false)
 
-    // const segments = []
-  const segments = [
-    {
-      id: 'label-casual',
-      action_type: 'buy',
-      segment_type: 'growth',
-      segment_basis: 'tag',
-      name: 'Casual',
-      user_count: 55,
-      strength: 90.2,
-      status: 'new'
-    },
-    {
-      id: 'label-topwear',
-      action_type: 'buy',
-      segment_type: 'growth',
-      segment_basis: 'tag',
-      name: 'Topwear',
-      user_count: 52,
-      strength: 89.1,
-      status: 'new'
-    },
-    {
-      id: 'label-dresses',
-      action_type: 'buy',
-      segment_type: 'growth',
-      segment_basis: 'tag',
-      name: 'Dresses',
-      user_count: 32,
-      strength: 84.5,
-      status: 'new'
-    },
-    {
-      id: 'label-formal',
-      action_type: 'buy',
-      segment_type: 'growth',
-      segment_basis: 'tag',
-      name: 'Formal',
-      user_count: 23,
-      strength: 79.9,
-      status: 'new'
-    },
-    {
-      id: 'asset-2143',
-      action_type: 'buy',
-      segment_type: 'growth',
-      segment_basis: 'product',
-      name: 'Basics Men Blue Striped Polo T-shirt',
-      user_count: 34,
-      strength: 89.3,
-      status: 'new'
-    },
-    {
-      id: 'asset-31358',
-      action_type: 'buy',
-      segment_type: 'growth',
-      segment_basis: 'product',
-      name: 'Locomotive Brown Printed T-Shirt',
-      user_count: 26,
-      strength: 72.5,
-      status: 'new'
-    },
-    {
-      id: 'asset-1995',
-      action_type: 'buy',
-      segment_type: 'growth',
-      segment_basis: 'product',
-      name: 'ADIDAS Mens Crew Red T-shirt',
-      user_count: 12,
-      strength: 6.1,
-      status: 'new'
+
+  const params = new URLSearchParams({
+    segment_basis: segmentBasis,
+    force_refresh: forceRefresh
+  })
+  const { data: segments, isLoading, isRefetching } = useAppQuery({
+    url: `/api/segments?` + params,
+    reactQueryOptions: {
+      refetchOnReconnect: false
     }
-  ]
+  })
 
   const handleSyncButton = useCallback(value => setConfirmSync(true), [])
   const handleSyncClose = useCallback(value => setConfirmSync(false), [])
@@ -111,13 +51,15 @@ export function SegmentsIndex () {
     console.log(value)
   }, [])
 
-//   const { data: program, isLoading, isRefetching } = useAppQuery({
-//     url: `/api/segments/sync`,
-//     reactQueryOptions: {
-//       /* Disable refetching because the QRCodeForm component ignores changes to its props */
-//       refetchOnReconnect: false
-//     }
-//   })
+  const handleBasisChange = useCallback(value => setSegmentBasis(value), [])
+
+  //   const { data: program, isLoading, isRefetching } = useAppQuery({
+  //     url: `/api/segments/sync`,
+  //     reactQueryOptions: {
+  //       /* Disable refetching because the QRCodeForm component ignores changes to its props */
+  //       refetchOnReconnect: false
+  //     }
+  //   })
 
   const options = [
     { label: 'Labels', value: 'labels' },
@@ -128,6 +70,11 @@ export function SegmentsIndex () {
     singular: 'segment',
     plural: 'segments'
   }
+
+  const basisOptions = [
+    { label: 'Tags', value: 'labels' },
+    { label: 'Products', value: 'assets' }
+  ]
 
   const {
     selectedResources,
@@ -141,10 +88,13 @@ export function SegmentsIndex () {
       description={"Hit the 'Refresh' button above to calculate new segments"}
       withIllustration
     />
-  );
+  )
 
-  const rowMarkup = segments.map(
-    ({ id, action_type, segment_basis, name, user_count, strength, status }, index) => (
+  const rowMarkup = segments?.map(
+    (
+      { id, action_type, segment_basis, name, user_count, strength, status },
+      index
+    ) => (
       <IndexTable.Row
         id={id}
         key={id}
@@ -154,12 +104,12 @@ export function SegmentsIndex () {
         <IndexTable.Cell>{id}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant='bodyMd' as='div'>
-          {action_type} &gt; {segment_basis} &gt; {name}
+            {action_type} &gt; {segment_basis} &gt; {name}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant='bodyMd' as='span' alignment='end' numeric>
-            {user_count}
+            {parseInt(user_count).toLocaleString()}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
@@ -177,9 +127,18 @@ export function SegmentsIndex () {
       <LegacyCard>
         <div style={{ padding: '12px', display: 'flex' }}>
           <div style={{ paddingRight: '24px', flex: 1 }}>
-           <Text variant="headingLg" as="h5">
-            Select segments to sync
-           </Text>
+            <Text variant='headingLg' as='h5'>
+              Select segments to sync
+            </Text>
+          </div>
+          <div style={{ paddingRight: '12px' }}>
+            <Select
+              labelInline
+              label='Segment type'
+              options={basisOptions}
+              value={segmentBasis}
+              onChange={handleBasisChange}
+            />
           </div>
           <div>
             <ButtonGroup>
@@ -196,7 +155,7 @@ export function SegmentsIndex () {
         </div>
         <IndexTable
           resourceName={resourceName}
-          itemCount={segments.length}
+          itemCount={isLoading ? 0 : segments.length}
           selectedItemsCount={
             allResourcesSelected ? 'All' : selectedResources.length
           }
@@ -227,7 +186,7 @@ export function SegmentsIndex () {
                   fontWeight='medium'
                   alignment='end'
                 >
-                   Strength
+                  Strength
                 </Text>
               )
             },
@@ -281,9 +240,8 @@ export function SegmentsIndex () {
         >
           <Modal.Section>
             <Text>
-              This action will reprocess user recommendations
-              and refenerate all user segments. This process could take
-              a few minutes to complete. 
+              This action will reprocess user recommendations and refenerate all
+              user segments. This process could take a few minutes to complete.
             </Text>
           </Modal.Section>
         </Modal>
