@@ -210,6 +210,13 @@ export default function applyQrCodeApiEndpoints (app) {
     */
    const segment_basis = req.query?.segment_basis;
    const force_refresh = req.query?.force_refresh;
+   const min_weight = req.query?.min_weight;
+
+    const weightMap = {
+      0.1: "low",
+      0.4: "med",
+      0.7: "high"
+    }
 
     const headers = {
       'actionhub-key': actionHubKey,
@@ -218,6 +225,7 @@ export default function applyQrCodeApiEndpoints (app) {
 
     const params = new URLSearchParams({
       segment_basis: segment_basis,
+      min_weight: min_weight,
       force_refresh: force_refresh
     })
     const response = await fetch(host + 'segments?' + params, {
@@ -227,7 +235,7 @@ export default function applyQrCodeApiEndpoints (app) {
     const segments = data['items'];
 
     for (let i = 0; i < segments?.length; i++) {
-      segments[i]['id'] = segments[i].segment_basis + '-' + segments[i].segment_basis_id
+      segments[i]['id'] = segments[i].segment_basis + '-' + segments[i].segment_basis_id + '-' + weightMap[min_weight]
     }
 
     res.status(200).send(segments)

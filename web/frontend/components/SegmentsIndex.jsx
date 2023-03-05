@@ -9,7 +9,7 @@ import {
   Modal,
   EmptySearchResult
 } from '@shopify/polaris'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useState, useCallback } from 'react'
 import { useAppQuery, useAuthenticatedFetch } from '../hooks'
 
@@ -17,19 +17,22 @@ export function SegmentsIndex () {
   const [confirmSync, setConfirmSync] = useState(false)
   const [confirmRefresh, setConfirmRefresh] = useState(false)
   const [segmentBasis, setSegmentBasis] = useState('labels')
+  const [minWeight, setMinWeight] = useState(0.1)
   const [forceRefresh, setForceRefresh] = useState(false)
-
 
   const params = new URLSearchParams({
     segment_basis: segmentBasis,
+    min_weight: minWeight,
     force_refresh: forceRefresh
   })
+
   const { data: segments, isLoading, isRefetching } = useAppQuery({
     url: `/api/segments?` + params,
     reactQueryOptions: {
       refetchOnReconnect: false
     }
   })
+
 
   const handleSyncButton = useCallback(value => setConfirmSync(true), [])
   const handleSyncClose = useCallback(value => setConfirmSync(false), [])
@@ -44,14 +47,22 @@ export function SegmentsIndex () {
   }, [])
 
   const handleRefreshSegments = useCallback(value => {
-    console.log(value)
+    setForceRefresh(true);
+    setConfirmRefresh(false);
   }, [])
 
   const handleSyncSegments = useCallback(value => {
     console.log(value)
   }, [])
 
-  const handleBasisChange = useCallback(value => setSegmentBasis(value), [])
+  const handleSegmentBasisChange = useCallback(value => {
+    setForceRefresh(false);
+    setSegmentBasis(value);
+    }, [])
+  const handleMinWeightChange = useCallback(value => {
+    setForceRefresh(false);
+    setMinWeight(value)}
+    , [])
 
   //   const { data: program, isLoading, isRefetching } = useAppQuery({
   //     url: `/api/segments/sync`,
@@ -75,6 +86,16 @@ export function SegmentsIndex () {
     { label: 'Tags', value: 'labels' },
     { label: 'Products', value: 'assets' }
   ]
+  const minWEightOptions = [
+    { label: 'Low+', value: '0.1' },
+    { label: 'Med+', value: '0.4' },
+    { label: 'High', value: '0.7' }
+  ]
+  const weightMap = { // for display purposes
+    0.1: "low",
+    0.4: "med",
+    0.7: "high"
+  }
 
   const {
     selectedResources,
@@ -104,7 +125,7 @@ export function SegmentsIndex () {
         <IndexTable.Cell>{id}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant='bodyMd' as='div'>
-            {action_type} &gt; {segment_basis} &gt; {name}
+            {action_type} ({weightMap[minWeight]}) &gt; {segment_basis} &gt; {name}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
@@ -137,7 +158,16 @@ export function SegmentsIndex () {
               label='Segment type'
               options={basisOptions}
               value={segmentBasis}
-              onChange={handleBasisChange}
+              onChange={handleSegmentBasisChange}
+            />
+          </div>
+          <div style={{ paddingRight: '12px' }}>
+            <Select
+              labelInline
+              label='Relevance'
+              options={minWEightOptions}
+              value={minWeight}
+              onChange={handleMinWeightChange}
             />
           </div>
           <div>
@@ -161,6 +191,7 @@ export function SegmentsIndex () {
           }
           onSelectionChange={handleSelectionChange}
           emptyState={emptyStateMarkup}
+          loading={isLoading}
           headings={[
             { id: 'id', title: 'Segment Id' },
             { id: 'name', title: 'Segment Name' },
