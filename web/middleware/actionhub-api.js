@@ -33,9 +33,9 @@ export default function applyActionHubEndpoints (app) {
       } `,
         variables: {
           definition: {
-            name: 'ActionHub Order Actions',
+            name: 'ActionHub Segments',
             namespace: 'actionhub',
-            key: 'order_actions',
+            key: 'segments',
             description:
               '[DO NOT EDIT - required for ActionHub] A list of recommended product order actions.',
             type: 'list.single_line_text_field',
@@ -54,7 +54,7 @@ export default function applyActionHubEndpoints (app) {
     */
     const resource = 'program'
     const url = process.env.ACTIONHUB_API_HOST + resource
-    console.log(url);
+    console.log(url)
     const response = await fetch(url, {
       headers: {
         'actionhub-key': actionHubKey,
@@ -69,14 +69,18 @@ export default function applyActionHubEndpoints (app) {
     /*
       get the
     */
-   const segment_basis = req.query?.segment_basis;
-   const force_refresh = req.query?.force_refresh;
-   const min_weight = req.query?.min_weight;
+    const segment_basis = req.query?.segment_basis
+    const force_refresh = req.query?.force_refresh
+    const min_weight = req.query?.min_weight
 
     const weightMap = {
-      0.1: "low",
-      0.4: "med",
-      0.7: "high"
+      0.1: 'low',
+      0.4: 'med',
+      0.7: 'high'
+    }
+    const basisMap = {
+      label: 'Tag',
+      asset: 'Product'
     }
 
     const headers = {
@@ -90,17 +94,23 @@ export default function applyActionHubEndpoints (app) {
       min_weight: min_weight,
       force_refresh: force_refresh
     })
-    console.log(process.env);
+    console.log(process.env)
     const url = process.env.ACTIONHUB_API_HOST + resource + params
-    console.log(url);
+    console.log(url)
     const response = await fetch(url, {
       headers: headers
     })
     const data = await response.json()
-    const segments = data['items'];
+    const segments = data['items']
 
     for (let i = 0; i < segments?.length; i++) {
-      segments[i]['id'] = segments[i].segment_basis + '-' + segments[i].segment_basis_id + '-' + weightMap[min_weight]
+      segments[i]['id'] =
+      segments[i].action_type + '-' +
+        segments[i].segment_basis +
+        '-' +
+        segments[i].segment_basis_id +
+        '-' +
+        weightMap[min_weight]
     }
 
     res.status(200).send(segments)

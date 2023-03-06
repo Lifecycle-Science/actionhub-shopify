@@ -96,6 +96,10 @@ export function SegmentsIndex () {
     0.4: "med",
     0.7: "high"
   }
+  const basisMap = {
+    label: 'Tag',
+    asset: 'Product'
+  }
 
   const {
     selectedResources,
@@ -106,7 +110,7 @@ export function SegmentsIndex () {
   const emptyStateMarkup = (
     <EmptySearchResult
       title={'No segments yet'}
-      description={"Hit the 'Refresh' button above to calculate new segments"}
+      description={"Hit the 'Refresh Segments' button above to calculate new segments"}
       withIllustration
     />
   )
@@ -125,7 +129,8 @@ export function SegmentsIndex () {
         <IndexTable.Cell>{id}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant='bodyMd' as='div'>
-            {action_type} ({weightMap[minWeight]}) &gt; {segment_basis} &gt; {name}
+            {action_type} ({weightMap[minWeight]}) 
+            &gt; {basisMap[segment_basis]} &gt; {name}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
@@ -172,7 +177,7 @@ export function SegmentsIndex () {
           </div>
           <div>
             <ButtonGroup>
-              <Button onClick={handleRefreshButton}>Refresh</Button>
+              <Button onClick={handleRefreshButton}>Refresh Segments</Button>
               <Button
                 disabled={selectedResources.length == 0}
                 primary
