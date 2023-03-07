@@ -1,4 +1,4 @@
-# ActionHUb Shopify App
+# ActionHub Shopify App
 
 ## Release Targets
 
@@ -9,4 +9,5 @@
 ### v2 (If-it-works)
 
 - Allow merchants to make personalized recomendations via an in-store ActionHub widget
+
 
