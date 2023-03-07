@@ -1,7 +1,6 @@
 /*
   This file interacts with the app's database and is used by the app's REST APIs.
 */
-
 import shopify from "./shopify.js";
 import pg from 'pg'
 
@@ -9,9 +8,22 @@ export const ActionHubDB = {
   db: null,
   ready: null,
 
-  startOnboardingStatus: async function({
-    shopName, stepId,
+  getShopifyAccessToken: async function({
+    shopName
   }) {
+    await this.ready;
+    const query = `
+      select "accessToken" as access_token 
+      from public.shopify_sessions
+      where shop = $1
+    `
+    const results = await this.__query(query, [shopName]);
+    return results.rows[0].access_token;
+  },
+
+  startOnboardingStatus: async function(
+    shopName, stepId
+  ) {
     await this.ready;
     const query = `
       insert into shops.fact_onboarding_steps 
@@ -23,9 +35,9 @@ export const ActionHubDB = {
     return true;
   },
 
-  endOnboardingStatus: async function({
-    shopName, stepId,
-  }) {
+  endOnboardingStatus: async function(
+    shopName, stepId
+  ) {
     await this.ready;
     const query = `
       update shops.fact_onboarding_steps 
@@ -52,14 +64,6 @@ export const ActionHubDB = {
     `
     const values = [shopName]
     const results = await this.__query(query, values);
-    const data = results.rows[0]
-    return data;
-  },
-
-  getTime: async function() {
-    await this.ready;
-    const query = "SELECT NOW() as now";
-    const results = await this.__query(query); 
     const data = results.rows[0]
     return data;
   },

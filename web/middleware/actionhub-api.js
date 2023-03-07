@@ -1,75 +1,63 @@
 import express from 'express'
 import shopify from '../shopify.js'
 import { ActionHubDB } from '../actionhub-db.js'
+import { fork } from 'child_process';
 
 // TODO: get the real program stuff here
 const actionHubKey = '5e0ff226-6043-4c4a-bbfb-8ea0d7968263'
 const programId = 'fashion_campus'
 
 export default function applyActionHubEndpoints (app) {
-  ActionHubDB.init();
+  ActionHubDB.init()
 
   app.use(express.json())
 
   app.get('/api/onboarding', async (req, res) => {
-    const shopName = res.locals.shopify.session.shop;
-    const stepId = 'creating_program'
+    const shopName = res.locals.shopify.session.shop
+
+    const child = fork('helpers/onboarding.js', [], {
+      env: {
+        SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
+        SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET,
+        SCOPES: process.env.SCOPES,
+        HOST: shopName
+      }
+    });
+    //child.send({ session: res.locals.shopify.session })
+    child.on('exit', (code, signal) => {
+      console.log(`child process exited with code ${code} and signal ${signal}`);
+    });
+    // child.send("hello!");
+    child.on('error', (code) => {
+      console.log(`child process exited with error ${code}`);
+    });
+    child.on('message', (message) => {
+      console.log(`message from child process: ${message}`);
+    });
+    // process.on('exit', () => {
+    //   child.kill();
+    // });
+
     const result = await ActionHubDB.getOnboardingStatus({
       shopName
-    });
-    const data = JSON.stringify(result)
+    })
+    const data = JSON.stringify(result)    
     res.status(200).send(data)
   })
 
   app.post('/api/onboarding', async (req, res) => {
-    const shopName = res.locals.shopify.session.shop;
+    const shopName = res.locals.shopify.session.shop
     // TODO: get this step dynamically
     const stepId = 'creating_program'
     const result = await ActionHubDB.setOnboardingStatus({
-      shopName, stepId
-    });
+      shopName,
+      stepId
+    })
     res.status(200).send(result)
   })
 
-
   app.get('/api/segments/sync', async (req, res) => {
-    /*
-      create customer sesgment metafields
-    */
-    const client = new shopify.api.clients.Graphql({
-      session: res.locals.shopify.session
-    })
-    const METADATA_QUERY = {
-      data: {
-        query: `
-      mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
-        metafieldDefinitionCreate(definition: $definition) {
-          createdDefinition {
-            id
-            name
-          }
-          userErrors {
-            field
-            message
-            code
-          }
-        }
-      } `,
-        variables: {
-          definition: {
-            name: 'ActionHub Segments',
-            namespace: 'actionhub',
-            key: 'segments',
-            description:
-              '[DO NOT EDIT - required for ActionHub] A list of recommended product order actions.',
-            type: 'list.single_line_text_field',
-            ownerType: 'CUSTOMER'
-          }
-        }
-      }
-    }
-    const response = await client.query(METADATA_QUERY)
-    console.log(response.headers, response.body)
+    /* something goes here */
   })
 
   app.get('/api/program', async (req, res) => {
@@ -118,18 +106,18 @@ export default function applyActionHubEndpoints (app) {
       min_weight: min_weight,
       force_refresh: force_refresh
     })
-    console.log(process.env)
     const url = process.env.ACTIONHUB_API_HOST + resource + params
-    console.log(url)
     const response = await fetch(url, {
       headers: headers
     })
     const data = await response.json()
+    
     const segments = data['items']
 
     for (let i = 0; i < segments?.length; i++) {
       segments[i]['id'] =
-      segments[i].action_type + '-' +
+        segments[i].action_type +
+        '-' +
         segments[i].segment_basis +
         '-' +
         segments[i].segment_basis_id +
