@@ -7,11 +7,11 @@ import {
   SkeletonBodyText,
   LegacyCard
 } from '@shopify/polaris'
-import { QRCodeIndex } from '../components'
 import { useAppQuery } from '../hooks'
 
 import { ProgramCard } from '../components'
 import { SegmentsIndex } from '../components'
+import { OnboardingProgress } from '../components'
 
 export default function HomePage () {
   /*
@@ -50,26 +50,6 @@ export default function HomePage () {
     </Card>
   ) : null
 
-  /* Use Polaris Card and EmptyState components to define the contents of the empty state */
-  const emptyStateMarkup =
-    !isLoading && !QRCodes?.length ? (
-      <Card sectioned>
-        <EmptyState
-          heading='Create unique QR codes for your product'
-          /* This button will take the user to a Create a QR code page */
-          action={{
-            content: 'Create QR code',
-            onAction: () => navigate('/qrcodes/new')
-          }}
-          image='https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png'
-        >
-          <p>
-            Allow customers to scan codes and buy products using their phones.
-          </p>
-        </EmptyState>
-      </Card>
-    ) : null
-
   /*
     Use Polaris Page and TitleBar components to create the page layout,
     and include the empty state contents set above.
@@ -83,24 +63,13 @@ export default function HomePage () {
         //   onAction: () => navigate("/qrcodes/new"),
         // }}
       />
-      <Layout>
-        <Layout.Section>
 
-        <ProgramCard />
-        </Layout.Section>
-        <Layout.Section secondary>
-
-          <LegacyCard title='About ActionHub Segments' sectioned>
-            <p>[Help text goes here]</p>
-          </LegacyCard>
-        </Layout.Section>
-      </Layout>
-      <div style={{paddingTop: "24px"}}>
+      <OnboardingProgress />
+      {/* <div style={{paddingTop: "24px"}}> */}
       <SegmentsIndex />
       {/* {loadingMarkup}
-      {emptyStateMarkup}
       {qrCodesMarkup} */}
-          </div>
+          {/* </div> */}
     </Page>
   )
 }

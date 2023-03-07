@@ -15,6 +15,18 @@ export function OnboardingProgress () {
   const [toastProps, setToastProps] = useState(emptyToastProps)
   const fetch = useAuthenticatedFetch()
 
+  const {
+    data: onboardingStep,
+    isLoading,
+    isRefetching,
+  } = useAppQuery({
+    url: `/api/onboarding`,
+    reactQueryOptions: {
+      /* Disable refetching because the QRCodeForm component ignores changes to its props */
+      refetchOnReconnect: false,
+    },
+  });
+  
   const currentStep = '(6 of 7) Generating models...'
 
   // const {
@@ -31,7 +43,7 @@ export function OnboardingProgress () {
 
   return (
     <>
-      <Box width='100%' paddingBlockStart='8' paddingBlockEnd='8'>
+      <Box width='100%' paddingBlockEnd='8'>
         <LegacyCard
           title={'ActionHub setup status'}
           sectioned
@@ -49,13 +61,18 @@ export function OnboardingProgress () {
               and customers in your shop. Feel free to navigate to another page
               and return later to check on progress.
             </p>
+            <p>
+              {/* { onboardingProgress?.now } */}
+              {/* { status }
+              { status?.now } */}
+            </p>
           </Banner>
           <p style={{ paddingBottom: '16px', paddingTop: '16px' }}>
             <i>
-              <b>Current Step</b>: {currentStep}
+            <b>Current Step</b>: {isLoading ? "" : onboardingStep.step_message}
             </i>
           </p>
-          <ProgressBar progress={75} />
+          <ProgressBar progress={onboardingStep?.step_progress} />
         </LegacyCard>
       </Box>
     </>
