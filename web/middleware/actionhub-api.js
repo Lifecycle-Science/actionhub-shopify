@@ -1,12 +1,36 @@
 import express from 'express'
 import shopify from '../shopify.js'
+import { ActionHubDB } from '../actionhub-db.js'
 
 // TODO: get the real program stuff here
 const actionHubKey = '5e0ff226-6043-4c4a-bbfb-8ea0d7968263'
 const programId = 'fashion_campus'
 
 export default function applyActionHubEndpoints (app) {
+  ActionHubDB.init();
+
   app.use(express.json())
+
+  app.get('/api/onboarding', async (req, res) => {
+    const shopName = res.locals.shopify.session.shop;
+    const stepId = 'creating_program'
+    const result = await ActionHubDB.getOnboardingStatus({
+      shopName
+    });
+    const data = JSON.stringify(result)
+    res.status(200).send(data)
+  })
+
+  app.post('/api/onboarding', async (req, res) => {
+    const shopName = res.locals.shopify.session.shop;
+    // TODO: get this step dynamically
+    const stepId = 'creating_program'
+    const result = await ActionHubDB.setOnboardingStatus({
+      shopName, stepId
+    });
+    res.status(200).send(result)
+  })
+
 
   app.get('/api/segments/sync', async (req, res) => {
     /*
