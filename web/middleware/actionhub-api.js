@@ -14,7 +14,7 @@ export default function applyActionHubEndpoints (app) {
 
   app.get('/api/onboarding', async (req, res) => {
     /*
-      TODO: move this to a put operation
+    TODO: move this to a put operation
     */
 
     const shopName = res.locals.shopify.session.shop
@@ -42,10 +42,12 @@ export default function applyActionHubEndpoints (app) {
         global.ACTIONHUB_API_SHOP_PROGRAM_ID = message.programId;
         console.log(`setting programId: ${message.programId}`);
       }
+
       if (message.hasOwnProperty("actionHubKey")) {
         global.ACTIONHUB_API_SHOP_KEY = message.actionHubKey;
         console.log(`setting actionHubKey: ${message.actionHubKey}`);
       }
+      
       else {
         console.log(`message from child process: ${JSON.stringify(message)}`);
       }
