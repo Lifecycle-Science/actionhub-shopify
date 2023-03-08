@@ -14,51 +14,68 @@ export default function applyActionHubEndpoints (app) {
 
   app.get('/api/onboarding', async (req, res) => {
     /*
-    TODO: move this to a put operation
+      This function responds with onboarding status messages.
+      If there are no messages, it will kick off the onboarding process.
     */
-
+    // Get current status
     const shopName = res.locals.shopify.session.shop
-
-    const child = fork('helpers/onboarding.js', [], {
-      env: {
-        SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
-        SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET,
-        SCOPES: process.env.SCOPES,
-        HOST: shopName
-      }
-    });
-
-    child.on('exit', (code, signal) => {
-      console.log(`child process exited with code ${code} and signal ${signal}`);
-    });
-
-    child.on('error', (code) => {
-      console.log(`child process exited with error ${code}`);
-    });
-
-    /* get mesages back from the process */
-    child.on('message', (message) => {
-      if (message.hasOwnProperty("programId")) {
-        global.ACTIONHUB_API_SHOP_PROGRAM_ID = message.programId;
-        console.log(`setting programId: ${message.programId}`);
-      }
-
-      if (message.hasOwnProperty("actionHubKey")) {
-        global.ACTIONHUB_API_SHOP_KEY = message.actionHubKey;
-        console.log(`setting actionHubKey: ${message.actionHubKey}`);
-      }
-      
-      else {
-        console.log(`message from child process: ${JSON.stringify(message)}`);
-      }
-    });
-
-
     const result = await ActionHubDB.getOnboardingStatus({
       shopName
     })
-    const data = JSON.stringify(result)    
-    res.status(200).send(data)
+
+    if (!result) {
+      // No onboarding yet so let's get started
+      // Log the starting
+      const result = await ActionHubDB.startOnboardingStatus(
+        shopName, "start"
+      )
+        
+      // Kick off the child process
+      const child = fork('helpers/onboarding.js', [], {
+        env: {
+          SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
+          SHOPIFY_API_SECRET: process.env.SHOPIFY_API_SECRET,
+          SCOPES: process.env.SCOPES,
+          HOST: shopName
+        }
+      });
+      child.on('exit', (code, signal) => {
+        console.log(`child process exited with code ${code} and signal ${signal}`);
+      });
+      child.on('error', (code) => {
+        console.log(`child process exited with error ${code}`);
+      });
+
+      // Handle mesages back from the process 
+      child.on('message', (message) => {
+        if (message.hasOwnProperty("programId")) {
+          global.ACTIONHUB_API_SHOP_PROGRAM_ID = message.programId;
+          console.log(`setting programId: ${message.programId}`);
+        }
+        if (message.hasOwnProperty("actionHubKey")) {
+          global.ACTIONHUB_API_SHOP_KEY = message.actionHubKey;
+          console.log(`setting actionHubKey: ${message.actionHubKey}`);
+        }
+        else {
+          console.log(`message from child process: ${JSON.stringify(message)}`);
+        }
+      });
+
+      // Let 'em know we started
+      const msg = {
+        step_id: "start",
+        step_message: "Starting installation",
+        step_progress: 0
+      }
+      const data = JSON.stringify(msg)   
+      res.status(200).send(data)
+    }
+    else {
+      // Onboarding already started
+      console.log(shopName + ' onboarding already started')
+      const data = JSON.stringify(result)   
+      res.status(200).send(data)
+    }
   })
 
   app.post('/api/onboarding', async (req, res) => {

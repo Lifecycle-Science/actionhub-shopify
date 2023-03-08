@@ -9,9 +9,9 @@ import {
   Modal,
   EmptySearchResult
 } from '@shopify/polaris'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useState, useCallback } from 'react'
-import { useAppQuery, useAuthenticatedFetch } from '../hooks'
+import { useAppQuery } from '../hooks'
 
 export function SegmentsIndex () {
   const [confirmSync, setConfirmSync] = useState(false)

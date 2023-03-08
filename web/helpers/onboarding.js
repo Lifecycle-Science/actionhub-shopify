@@ -2,13 +2,20 @@
 import { ActionHubDB } from '../actionhub-db.js'
 import Shopify from 'shopify-api-node'
 
+const OnboardingStep = {
+  CreateProgram: 'create_program',
+  CreateMetaFields: 'create_metafields',
+  ImportProducts: 'import_products',
+  ImportOrders: 'import_orders',
+  GenerateGlobals: 'generate_global',
+  GenerateActions: 'generate_actions',
+  Complete: 'complete',
+  WarningNoProducts: 'warning_no_products',
+  WarningNoOrders: 'warning_no_orders'
+}
+
 // create_program
 // create_metafields
-// import_products
-// import_orders
-// generate_globals
-// generate_actions
-// complete
 
 let programId = ''
 let actionHubKey = ''
@@ -30,8 +37,12 @@ async function createProgram () {
   /*
     Create a new program on the ActionHub platform.
   */
-  process.send('starting "create_program"')
-  await ActionHubDB.startOnboardingStatus(shopName, 'create_program')
+  // Log status
+  process.send('starting ' + OnboardingStep.CreateProgram)
+  await ActionHubDB.startOnboardingStatus(
+    shopName,
+    OnboardingStep.CreateProgram
+  )
 
   const program = await ActionHubDB.getActionHubProgram({ shopName })
   if (!program) {
@@ -85,7 +96,12 @@ async function createProgram () {
     actionHubKey: actionHubKey
   })
 
-  await ActionHubDB.startOnboardingStatus(shopName, 'create_program')
+  // Log status
+  await ActionHubDB.startOnboardingStatus(
+    shopName,
+    OnboardingStep.CreateProgram
+  )
+  // Next step
   await createMetafields()
   Promise.resolve()
 }
@@ -94,8 +110,13 @@ async function createMetafields () {
   /*
     Create the metafields that will hold the ActionHub segments
   */
-  process.send('starting "create_metafields"')
-  await ActionHubDB.startOnboardingStatus(shopName, 'create_metafields')
+  // Log status
+  process.send('starting ' + OnboardingStep.CreateMetaFields)
+  await ActionHubDB.startOnboardingStatus(
+    shopName,
+    OnboardingStep.CreateMetaFields
+  )
+
   const query = `
     mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
       metafieldDefinitionCreate(definition: $definition) {
@@ -123,7 +144,12 @@ async function createMetafields () {
   const response = await shopify.graphql(query, variables)
   // TODO: do something with the response for error chceking
 
-  await ActionHubDB.endOnboardingStatus(shopName, 'create_metafields')
+  // Log status
+  await ActionHubDB.endOnboardingStatus(
+    shopName,
+    OnboardingStep.CreateMetaFields
+  )
+  // Next step
   await imoprtProducts()
   Promise.resolve()
 }
@@ -133,15 +159,30 @@ async function imoprtProducts () {
     Create assets in ActionHub from shop products.
     Products include tags.
   */
-  process.send('starting "import_products"')
-  await ActionHubDB.startOnboardingStatus(shopName, 'import_products')
+  // Log status
+  process.send('starting ' + OnboardingStep.ImportProducts)
+  await ActionHubDB.startOnboardingStatus(
+    shopName,
+    OnboardingStep.ImportProducts
+  )
 
   // read the products from Shopify
-  const products = await shopify.product.list();
-  const assets = [];
+  const products = await shopify.product.list()
+  if (products.length == 0) {
+    // Can't go on if there are no products
+    await ActionHubDB.startOnboardingStatus(
+      shopName,
+      OnboardingStep.WarningNoProducts
+    )
+    Promise.resolve();
+    return false;
+  }
+
+  // Build the body for posting to ActionHub
+  const assets = []
   for (const product of products) {
-    const assetId = product.id;
-    const assetName = product.title;
+    const assetId = product.id
+    const assetName = product.title
     const tags = product.tags.split(',')
     const asset = {
       asset_id: assetId,
@@ -151,10 +192,10 @@ async function imoprtProducts () {
     assets.push(asset)
   }
 
-  // write the assets to ActionHub API
+  // Write the assets to ActionHub API
   const new_assets = {
     assets: assets
-  }  
+  }
   const resource = 'assets'
   const url = process.env.ACTIONHUB_API_HOST + resource
   const response = await fetch(url, {
@@ -170,49 +211,81 @@ async function imoprtProducts () {
   const result = await response.json()
   // TODO: do something with the result for error chceking
 
-  await ActionHubDB.endOnboardingStatus(shopName, 'import_products')
+  // Log status
+  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.ImportProducts)
+  // Next step
   await importOrders()
   Promise.resolve()
 }
 
 async function importOrders () {
-  process.send('starting "import_orders"')
-  await ActionHubDB.startOnboardingStatus(shopName, 'import_orders')
+  /*
+    Import orders from Shopify and post to ActionHub as events
+  */
+  // Log status
+  process.send('starting ' + OnboardingStep.ImportOrders)
+  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.ImportOrders)
 
-  // read the products from Shopify
-  const products = await shopify.product.list();
-  const assets = [];
-  for (const product of products) {
-    const assetId = product.id;
-    const assetName = product.title;
-    const tags = product.tags.split(',')
-    const asset = {
-      asset_id: assetId,
-      asset_name: assetName,
-      labels: tags
-    }
-    assets.push(asset)
+  // Read the orders from Shopify
+  const orders = await shopify.order.list()
+  if (orders.length == 0) {
+    // Can't go on if there are no orders
+    await ActionHubDB.startOnboardingStatus(
+      shopName,
+      OnboardingStep.WarningNoOrders
+    )
+    Promise.resolve();
+    return false;
   }
 
-  await ActionHubDB.endOnboardingStatus(shopName, 'import_orders')
+  // HERE NEXT...
+
+  console.log(JSON.stringify(orders))
+  for (const order of orders) {
+    console.log(JSON.stringify(order))
+  }
+
+  // const assets = [];
+  // for (const product of products) {
+  //   const assetId = product.id;
+  //   const assetName = product.title;
+  //   const tags = product.tags.split(',')
+  //   const asset = {
+  //     asset_id: assetId,
+  //     asset_name: assetName,
+  //     labels: tags
+  //   }
+  //   assets.push(asset)
+  // }
+
+  // Log status
+  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.ImportOrders)
+  // Next step
   await generateGlobals()
   Promise.resolve()
 }
 
 async function generateGlobals () {
+  // Log status
   process.send('starting "generate_globals"')
   await ActionHubDB.startOnboardingStatus(shopName, 'generate_globals')
 
+  // Log status
   await ActionHubDB.endOnboardingStatus(shopName, 'generate_globals')
+  // Next step
   await generateActions()
   Promise.resolve()
 }
 
 async function generateActions () {
+  // Log status
   process.send('starting "generate_actions"')
   await ActionHubDB.startOnboardingStatus(shopName, 'generate_actions')
 
+  // Log status
   await ActionHubDB.endOnboardingStatus(shopName, 'generate_actions')
+  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.Complete)
+  // Done!
   Promise.resolve()
 }
 
