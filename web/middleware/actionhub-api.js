@@ -13,6 +13,10 @@ export default function applyActionHubEndpoints (app) {
   app.use(express.json())
 
   app.get('/api/onboarding', async (req, res) => {
+    /*
+      TODO: move this to a put operation
+    */
+
     const shopName = res.locals.shopify.session.shop
 
     const child = fork('helpers/onboarding.js', [], {
@@ -23,20 +27,30 @@ export default function applyActionHubEndpoints (app) {
         HOST: shopName
       }
     });
-    //child.send({ session: res.locals.shopify.session })
+
     child.on('exit', (code, signal) => {
       console.log(`child process exited with code ${code} and signal ${signal}`);
     });
-    // child.send("hello!");
+
     child.on('error', (code) => {
       console.log(`child process exited with error ${code}`);
     });
+
+    /* get mesages back from the process */
     child.on('message', (message) => {
-      console.log(`message from child process: ${message}`);
+      if (message.hasOwnProperty("programId")) {
+        global.ACTIONHUB_API_SHOP_PROGRAM_ID = message.programId;
+        console.log(`setting programId: ${message.programId}`);
+      }
+      if (message.hasOwnProperty("actionHubKey")) {
+        global.ACTIONHUB_API_SHOP_KEY = message.actionHubKey;
+        console.log(`setting actionHubKey: ${message.actionHubKey}`);
+      }
+      else {
+        console.log(`message from child process: ${JSON.stringify(message)}`);
+      }
     });
-    // process.on('exit', () => {
-    //   child.kill();
-    // });
+
 
     const result = await ActionHubDB.getOnboardingStatus({
       shopName
@@ -66,7 +80,6 @@ export default function applyActionHubEndpoints (app) {
     */
     const resource = 'program'
     const url = process.env.ACTIONHUB_API_HOST + resource
-    console.log(url)
     const response = await fetch(url, {
       headers: {
         'actionhub-key': actionHubKey,
@@ -111,7 +124,7 @@ export default function applyActionHubEndpoints (app) {
       headers: headers
     })
     const data = await response.json()
-    
+
     const segments = data['items']
 
     for (let i = 0; i < segments?.length; i++) {
@@ -128,3 +141,4 @@ export default function applyActionHubEndpoints (app) {
     res.status(200).send(segments)
   })
 }
+
