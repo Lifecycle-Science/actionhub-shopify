@@ -7,8 +7,10 @@ import {
   Link
 } from '@shopify/polaris'
 import { useAppQuery } from '../hooks'
+import { propagateErrors } from '@shopify/react-form';
 
-export function OnboardingProgress () {
+export function OnboardingProgress (props) {
+  const [isVisible, setIsVisible] = useState(false);
   const emptyToastProps = { content: null }
   const [toastProps, setToastProps] = useState(emptyToastProps)
 
@@ -25,7 +27,11 @@ export function OnboardingProgress () {
   })
 
   useEffect(() => {
-    // if (true) { return }
+    if (typeof onboardingStep !== "undefined") {
+      // TODO: check if "dismissed"
+      setIsVisible(true)
+      props.onOnboardingStep(onboardingStep)
+    };
     if ((onboardingStep?.step_progress ?? 0) < 100) {
       if (!isRefetching && !isLoading) {
         console.log("checking onboarding state")
@@ -95,6 +101,9 @@ export function OnboardingProgress () {
       </p>
     )
 
+    if (!isVisible) {
+      return null
+    }
   return (
     <>
       <Box width='100%' paddingBlockEnd='8'>

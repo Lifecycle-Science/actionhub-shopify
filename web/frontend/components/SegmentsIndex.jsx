@@ -7,25 +7,105 @@ import {
   Button,
   ButtonGroup,
   Modal,
-  EmptySearchResult
+  EmptySearchResult,
+  EmptyState
 } from '@shopify/polaris'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useState, useCallback } from 'react'
 import { useAppQuery } from '../hooks'
 
-export function SegmentsIndex () {
+export function SegmentsIndex (props) {
   const [confirmSync, setConfirmSync] = useState(false)
   const [confirmRefresh, setConfirmRefresh] = useState(false)
   const [segmentBasis, setSegmentBasis] = useState('labels')
   const [minWeight, setMinWeight] = useState(0.1)
   const [forceRefresh, setForceRefresh] = useState(false)
 
+  /*
+    Use onboarding state to inform messaging about empty state
+    */
+  const [onboardingState, setOnboardingState] = useState(props.onboardingState)
+
+  useEffect(() => {
+    setOnboardingState(props.onboardingState)
+  }, [props.onboardingState])
+
+  const emptyStateMessage = stepId => {
+    console.log('step id: ' + stepId)
+    let msg = ''
+    if (stepId == 'warning_no_products') {
+      msg =
+        'ActionHub could not find products in your shop. Products are required for generating recommendation segments.'
+    } else if (stepId == 'warning_no_orders') {
+      msg =
+        'ActionHub could not find orders in your shop. Orders are required for generating recommendation segments.'
+    } else {
+      msg =
+        'There are no segmens available matching these criteria. Please change the filters to check for other segments.'
+    }
+    return msg
+  }
+
+  const emptyStateMarkup = (
+    <EmptyState
+      heading='No segments available'
+      image='https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
+      //   withIllustration
+    >
+      <p>{emptyStateMessage(props.onboardingState.step_id)}</p>
+    </EmptyState>
+  )
+
+  /*
+    All the interaction event handlers...
+  */
+  // fiter option changes
+  const handleSegmentBasisChange = useCallback(value => {
+    // No foreced refresh on filter changes
+    setForceRefresh(false)
+    setSegmentBasis(value)
+  }, [])
+  const handleMinWeightChange = useCallback(value => {
+    // No foreced refresh on filter changes
+    setForceRefresh(false)
+    setMinWeight(value)
+  }, [])
+
+  // Refresh (run the segments again)
+  // Wrapped in modal actions
+  const handleRefreshButton = useCallback(value => setConfirmRefresh(true), [])
+  const handleRefreshSegments = useCallback(value => {
+    setForceRefresh(true)
+    setConfirmRefresh(false)
+  }, [])
+  const handleRefreshClose = useCallback(value => setConfirmRefresh(false), [])
+
+  // This is the Big One...
+  // Wrapped in modal actions
+  const handleSyncButton = useCallback(value => setConfirmSync(true), [])
+  const handleSyncSegments = useCallback(value => {
+    // TODO - implement this
+    console.log(value)
+  }, [])
+  const handleSyncClose = useCallback(value => setConfirmSync(false), [])
+
+  // Documentation content
+  const handleSyncLearnMore = useCallback(value => {
+    window.open('https://docs.actionhub.ai', '_blank')
+  }, [])
+  const handleRefreshLearnMore = useCallback(value => {
+    window.open('https://docs.actionhub.ai', '_blank')
+  }, [])
+
+  /*
+    The call to the back end starts here...
+  */
   const params = new URLSearchParams({
     segment_basis: segmentBasis,
     min_weight: minWeight,
     force_refresh: forceRefresh
   })
-
+  
   const { data: segments, isLoading, isRefetching } = useAppQuery({
     url: `/api/segments?` + params,
     reactQueryOptions: {
@@ -33,55 +113,17 @@ export function SegmentsIndex () {
     }
   })
 
-
-  const handleSyncButton = useCallback(value => setConfirmSync(true), [])
-  const handleSyncClose = useCallback(value => setConfirmSync(false), [])
-  const handleSyncLearnMore = useCallback(value => {
-    window.open('https://docs.actionhub.ai', '_blank')
-  }, [])
-
-  const handleRefreshButton = useCallback(value => setConfirmRefresh(true), [])
-  const handleRefreshClose = useCallback(value => setConfirmRefresh(false), [])
-  const handleRefreshLearnMore = useCallback(value => {
-    window.open('https://docs.actionhub.ai', '_blank')
-  }, [])
-
-  const handleRefreshSegments = useCallback(value => {
-    setForceRefresh(true);
-    setConfirmRefresh(false);
-  }, [])
-
-  const handleSyncSegments = useCallback(value => {
-    console.log(value)
-  }, [])
-
-  const handleSegmentBasisChange = useCallback(value => {
-    setForceRefresh(false);
-    setSegmentBasis(value);
-    }, [])
-  const handleMinWeightChange = useCallback(value => {
-    setForceRefresh(false);
-    setMinWeight(value)}
-    , [])
-
-  //   const { data: program, isLoading, isRefetching } = useAppQuery({
-  //     url: `/api/segments/sync`,
-  //     reactQueryOptions: {
-  //       /* Disable refetching because the QRCodeForm component ignores changes to its props */
-  //       refetchOnReconnect: false
-  //     }
-  //   })
-
+  /*
+    Displat data and picklists stuff
+  */
   const options = [
     { label: 'Labels', value: 'labels' },
     { label: 'Products', value: 'assets' }
   ]
-
   const resourceName = {
     singular: 'segment',
     plural: 'segments'
   }
-
   const basisOptions = [
     { label: 'Tags', value: 'labels' },
     { label: 'Products', value: 'assets' }
@@ -91,10 +133,11 @@ export function SegmentsIndex () {
     { label: 'Med+', value: '0.4' },
     { label: 'High', value: '0.7' }
   ]
-  const weightMap = { // for display purposes
-    0.1: "low",
-    0.4: "med",
-    0.7: "high"
+  const weightMap = {
+    // for display purposes
+    0.1: 'low',
+    0.4: 'med',
+    0.7: 'high'
   }
   const basisMap = {
     label: 'Tag',
@@ -106,14 +149,6 @@ export function SegmentsIndex () {
     allResourcesSelected,
     handleSelectionChange
   } = useIndexResourceState(segments)
-
-  const emptyStateMarkup = (
-    <EmptySearchResult
-      title={'No segments yet'}
-      description={"Hit the 'Refresh Segments' button above to calculate new segments"}
-      withIllustration
-    />
-  )
 
   const rowMarkup = segments?.map(
     (
@@ -129,8 +164,8 @@ export function SegmentsIndex () {
         <IndexTable.Cell>{id}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant='bodyMd' as='div'>
-            {action_type} ({weightMap[minWeight]}) 
-            &gt; {basisMap[segment_basis]} &gt; {name}
+            {action_type} ({weightMap[minWeight]}) &gt;{' '}
+            {basisMap[segment_basis]} &gt; {name}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>

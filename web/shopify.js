@@ -16,6 +16,7 @@ const database = new sqlite3.Database(join(process.cwd(), "database.sqlite"));
 QRCodesDB.db = database;
 QRCodesDB.init();
 
+
 const shopify = shopifyApp({
   api: {
     restResources,

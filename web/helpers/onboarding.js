@@ -1,7 +1,10 @@
-// import shopify from "../shopify.js";
 import { ActionHubDB } from '../actionhub-db.js'
 import Shopify from 'shopify-api-node'
 
+/*
+ These enum values match the step_id(s) in the 
+ onboarding database
+*/
 const OnboardingStep = {
   CreateProgram: 'create_program',
   CreateMetaFields: 'create_metafields',
@@ -13,9 +16,6 @@ const OnboardingStep = {
   WarningNoProducts: 'warning_no_products',
   WarningNoOrders: 'warning_no_orders'
 }
-
-// create_program
-// create_metafields
 
 let programId = ''
 let actionHubKey = ''
@@ -82,6 +82,7 @@ async function createProgram () {
       actionHubKey,
       permissions
     })
+    
   } else {
     // use the program details we got
     console.log(program)
@@ -290,19 +291,7 @@ async function generateActions () {
 }
 
 process.on('message', message => {
-  //process.send({text:'shop name!!'});
-  // await ActionHubDB.init();
-  //session = message.session;
-  //process.send({text:'shop name!!'});
-  //await createProgram();
-  // process.exit();
-  // create_program
-  // create_metafields
-  // import_products
-  // import_orders
-  // generate_globals
-  // generate_actions
-  // complete
+
 })
 
 // process.exit()

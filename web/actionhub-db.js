@@ -1,5 +1,5 @@
 /*
-  This file interacts with the app's database and is used by the app's REST APIs.
+  This file interacts with the app's database
 */
 import shopify from "./shopify.js";
 import pg from 'pg'

@@ -8,11 +8,7 @@ import serveStatic from "serve-static";
 import shopify from "./shopify.js";
 import GDPRWebhookHandlers from "./gdpr.js";
 
-import applyActionHubEndpoints from './middleware/actionhub-api.js';
-
-// TODO: get rid of these
-import applyQrCodeApiEndpoints from "./middleware/actionhub-api.js";
-import applyQrCodePublicEndpoints from "./middleware/qr-code-public.js";
+import applyActionHubAppEndpoints from './middleware/actionhub-app-api.js';
 
 const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT, 10);
 
@@ -35,16 +31,12 @@ app.post(
   shopify.processWebhooks({ webhookHandlers: GDPRWebhookHandlers })
 );
 
-// TODO: get rid of this
-applyQrCodePublicEndpoints(app);
-
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
-
 app.use(express.json());
 
-// TODO: get rid of this
-applyActionHubEndpoints(app);
+// ActionHub App API here
+applyActionHubAppEndpoints(app);
 
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
