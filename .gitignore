@@ -11,6 +11,9 @@ coverage
 # Ignore Apple macOS Desktop Services Store
 .DS_Store
 
+# Ignore VS Code files
+.vscode/*.json
+
 # Logs
 logs
 *.log

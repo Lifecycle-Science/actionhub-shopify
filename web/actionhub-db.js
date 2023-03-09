@@ -1,7 +1,6 @@
 /*
-  This file interacts with the app's database and is used by the app's REST APIs.
+  This file interacts with the app's database
 */
-
 import shopify from "./shopify.js";
 import pg from 'pg'
 
@@ -9,9 +8,47 @@ export const ActionHubDB = {
   db: null,
   ready: null,
 
-  startOnboardingStatus: async function({
-    shopName, stepId,
+  getShopifyAccessToken: async function({
+    shopName
   }) {
+    await this.ready;
+    const query = `
+      select "accessToken" as access_token 
+      from public.shopify_sessions
+      where shop = $1
+    `
+    const results = await this.__query(query, [shopName]);
+    return results.rows[0].access_token;
+  },
+
+  getActionHubProgram: async function({shopName}) {
+    await this.ready;
+    const query = `
+      select shop_name, program_id, actionhub_key, permissions
+      from shops.dim_shops
+      where shop_name = $1
+    `
+    const results = await this.__query(query, [shopName]);
+    return results.rows[0];
+  },
+
+  createActionHubShop: async function({
+    shopName, programId, actionHubKey, permissions
+  }) {
+    const query = `
+    insert into shops.dim_shops (
+      shop_name, program_id, actionhub_key, permissions
+    )
+    values ($1, $2, $3, $4);
+    `
+    const values = [shopName, programId, actionHubKey, permissions];
+    const results = await this.__query(query, values);
+    return true;
+  },
+
+  startOnboardingStatus: async function(
+    shopName, stepId
+  ) {
     await this.ready;
     const query = `
       insert into shops.fact_onboarding_steps 
@@ -23,9 +60,9 @@ export const ActionHubDB = {
     return true;
   },
 
-  endOnboardingStatus: async function({
-    shopName, stepId,
-  }) {
+  endOnboardingStatus: async function(
+    shopName, stepId
+  ) {
     await this.ready;
     const query = `
       update shops.fact_onboarding_steps 
@@ -52,14 +89,6 @@ export const ActionHubDB = {
     `
     const values = [shopName]
     const results = await this.__query(query, values);
-    const data = results.rows[0]
-    return data;
-  },
-
-  getTime: async function() {
-    await this.ready;
-    const query = "SELECT NOW() as now";
-    const results = await this.__query(query); 
     const data = results.rows[0]
     return data;
   },
