@@ -7,7 +7,6 @@ import {
   Button,
   ButtonGroup,
   Modal,
-  EmptySearchResult,
   EmptyState
 } from '@shopify/polaris'
 import React, { useEffect } from 'react'
@@ -29,33 +28,6 @@ export function SegmentsIndex (props) {
   useEffect(() => {
     setOnboardingState(props.onboardingState)
   }, [props.onboardingState])
-
-  const emptyStateMessage = stepId => {
-    console.log('step id: ' + stepId)
-    let msg = ''
-    if (stepId == 'warning_no_products') {
-      msg =
-        'ActionHub could not find products in your shop. Products are required for generating recommendation segments.'
-    } else if (stepId == 'warning_no_orders') {
-      msg =
-        'ActionHub could not find orders in your shop. Orders are required for generating recommendation segments.'
-    } else {
-      msg =
-        'There are no segmens available matching these criteria. Please change the filters to check for other segments.'
-    }
-    return msg
-  }
-
-  const emptyStateMarkup = (
-    <EmptyState
-      heading='No segments available'
-      image='https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
-      //   withIllustration
-    >
-      <p>{emptyStateMessage(props.onboardingState.step_id)}</p>
-    </EmptyState>
-  )
-
   /*
     All the interaction event handlers...
   */
@@ -105,9 +77,9 @@ export function SegmentsIndex (props) {
     min_weight: minWeight,
     force_refresh: forceRefresh
   })
-  
+
   const { data: segments, isLoading, isRefetching } = useAppQuery({
-    url: `/api/segments?` + params,
+    url: `/api/segments?${params}`,
     reactQueryOptions: {
       refetchOnReconnect: false
     }
@@ -149,6 +121,53 @@ export function SegmentsIndex (props) {
     allResourcesSelected,
     handleSelectionChange
   } = useIndexResourceState(segments)
+
+  const emptyStateMessage = onboardingState => {
+    let heading = ''
+    let msg = ''
+    let image = ''
+    if (onboardingState.step_id == 'warning_no_products') {
+      heading = 'No segments available'
+      msg =
+        'ActionHub could not find products in your shop. Products are required for generating recommendation segments.'
+      image =
+        'https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
+    } else if (onboardingState.step_id == 'warning_no_orders') {
+      heading = 'No segments available'
+      msg =
+        'ActionHub could not find orders in your shop. Orders are required for generating recommendation segments.'
+      image =
+        'https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
+    } else if (onboardingState.step_process < 100) {
+      heading = 'Installation in progress'
+      msg =
+        'ActionHub is setting up and running models. Segments should be available soon.'
+      image =
+        'https://lifecycle-science-public-files.s3.us-west-2.amazonaws.com/images/shopify-loading-state-1.gif'
+    } else if (isLoading) {
+      heading = 'Searching for segments'
+      msg = 'ActionHub is looking for your segments.'
+      image =
+        'https://lifecycle-science-public-files.s3.us-west-2.amazonaws.com/images/shopify-loading-state-1.gif'
+    } else {
+      heading = 'No segments available'
+      msg =
+        'ActionHub could not find segments in your shop. You can manually recalulate segments using the Refresh Segments button.'
+      image =
+        'https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
+    }
+    return { msg: msg, image: image, heading: heading }
+  }
+
+  const emptyStateMarkup = (
+    <EmptyState
+      heading={emptyStateMessage(props.onboardingState).heading}
+      image={emptyStateMessage(props.onboardingState).image}
+      //   withIllustration
+    >
+      <p>{emptyStateMessage(props.onboardingState).msg}</p>
+    </EmptyState>
+  )
 
   const rowMarkup = segments?.map(
     (

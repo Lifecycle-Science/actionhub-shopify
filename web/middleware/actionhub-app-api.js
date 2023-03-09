@@ -4,9 +4,6 @@ import { ActionHubDB } from '../actionhub-db.js'
 import { fork } from 'child_process'
 import { ActionHubAPI } from '../actionhub-api.js'
 
-// TODO: get the real program stuff here
-const actionHubKey = '5e0ff226-6043-4c4a-bbfb-8ea0d7968263'
-const programId = 'fashion_campus'
 
 export default function applyActionHubAppEndpoints (app) {
   ActionHubDB.init()

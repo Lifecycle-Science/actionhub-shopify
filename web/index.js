@@ -9,6 +9,7 @@ import GDPRWebhookHandlers from "./gdpr.js";
 
 import applyActionHubAppEndpoints from './middleware/actionhub-app-api.js';
 
+// @ts-ignore
 const PORT = parseInt(process.env.BACKEND_PORT || process.env.PORT, 10);
 
 const STATIC_PATH =
@@ -27,6 +28,7 @@ app.get(
 );
 app.post(
   shopify.config.webhooks.path,
+  // @ts-ignore
   shopify.processWebhooks({ webhookHandlers: GDPRWebhookHandlers })
 );
 

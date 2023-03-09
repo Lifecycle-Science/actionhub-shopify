@@ -82,7 +82,7 @@ async function createProgram () {
       actionHubKey,
       permissions
     })
-    
+
   } else {
     // use the program details we got
     console.log(program)
