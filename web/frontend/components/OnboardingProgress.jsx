@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Box, ProgressBar, Banner, Link } from '@shopify/polaris'
 import { useAppQuery, useAuthenticatedFetch } from '../hooks'
 
-
 export function OnboardingProgress (props) {
   const fetch = useAuthenticatedFetch()
 
@@ -29,10 +28,13 @@ export function OnboardingProgress (props) {
     */
     if (typeof onboardingStep !== 'undefined') {
       console.log(onboardingStep.step_id)
-      setIsVisible(onboardingStep.step_id !== "dismissed")
+      setIsVisible(onboardingStep.step_id !== 'dismissed')
       props.onOnboardingStep(onboardingStep)
     }
-    if ((onboardingStep?.step_progress ?? 0) < 100) {
+    if (
+      (onboardingStep?.step_progress ?? 0) < 100 &&
+      !onboardingStep?.step_id.startsWith('error')
+    ) {
       if (!isRefetching && !isLoading) {
         console.log('checking onboarding state')
         setTimeout(refetch, 500)
@@ -61,7 +63,8 @@ export function OnboardingProgress (props) {
     )
 
   const bannerInstallingMarkup =
-    (onboardingStep?.step_progress ?? 0) < 100 ? (
+    (onboardingStep?.step_progress ?? 0) < 100 &&
+    !onboardingStep?.step_id.startsWith('error') ? (
       <Banner
         status='info'
         title='ActionHub is preparing your program for first time use'
@@ -74,6 +77,18 @@ export function OnboardingProgress (props) {
           return later to check on progress.
         </p>
         {progressBarMarkup}
+      </Banner>
+    ) : null
+
+  const bannerInstallingErrorMarkup =
+    (onboardingStep?.step_progress ?? 0) < 100 &&
+    onboardingStep?.step_id.startsWith('error') ? (
+      <Banner status='critical' title='Integration Error'>
+        <p>
+          ActionHub encountered an error during integration.{' '}
+          <b>{onboardingStep?.step_message}.</b> <Link>Contact support.</Link>
+          </p>
+          <p><i><sub>Detail: {onboardingStep?.detail}</sub></i></p>
       </Banner>
     ) : null
 
@@ -110,8 +125,8 @@ export function OnboardingProgress (props) {
     const response = fetch(`/api/onboarding/dismiss`, {
       method,
       body: null,
-      headers: { "Content-Type": "application/json" },
-    });
+      headers: { 'Content-Type': 'application/json' }
+    })
 
     console.log('dismiss')
   }, [])
@@ -123,10 +138,10 @@ export function OnboardingProgress (props) {
         title='Installation complete'
         action={{
           content: 'Dismiss',
-          onAction: handleBannerDismiss,
+          onAction: handleBannerDismiss
         }}
         onDismiss={handleBannerDismiss}
-        >
+      >
         <p>
           ActionHub has been step up and is ready to use.
           <Link>Learn more about using ActionHub</Link>
@@ -141,6 +156,7 @@ export function OnboardingProgress (props) {
     <>
       <Box width='100%' paddingBlockEnd='8'>
         {bannerInstallingMarkup}
+        {bannerInstallingErrorMarkup}
         {bannerWarningNoOrdersMarkup}
         {bannerWarningNoProductsMarkup}
         {bannerCompleteMarkup}

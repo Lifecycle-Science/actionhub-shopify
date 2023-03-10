@@ -145,11 +145,17 @@ export function SegmentsIndex (props) {
       msg = `ActionHub could not find orders in your shop. 
             Orders are required for generating recommendation segments.`
       image = fileHost + '/images/shopify-empty-state-2.jpg'
+    } else if (onboardingState.step_id.startsWith('error')) {
+      // Onboarding in progress
+      heading = 'Error during integration'
+      msg = `ActionHub encountered an error during integrtaion. 
+            Segments count not be generated.`
+      image = fileHost + '/images/shopify-empty-state-2.jpg'
     } else if (onboardingState.step_progress < 100) {
       // Onboarding in progress
       heading = 'Installation in progress'
       msg = `ActionHub is setting up and running models. 
-            Segments should be available soon.`
+              Segments should be available soon.`
       image = fileHost + '/images/shopify-loading-state-1.gif'
     } else if (isLoading) {
       // Results loading

@@ -14,7 +14,9 @@ const OnboardingStep = {
   GenerateActions: 'generate_actions',
   Complete: 'complete',
   WarningNoProducts: 'warning_no_products',
-  WarningNoOrders: 'warning_no_orders'
+  WarningNoOrders: 'warning_no_orders',
+  ErrorOrders: `error_orders`,
+  ErrorAssets: `error_assets`
 }
 
 let programId = ''
@@ -33,6 +35,9 @@ const shopify = new Shopify({
 
 await createProgram()
 
+/*
+  STEP 1
+*/
 async function createProgram () {
   /*
     Create a new program on the ActionHub platform.
@@ -56,6 +61,9 @@ async function createProgram () {
     }
     console.log(JSON.stringify(new_program))
 
+    /*
+      This is the only function that should require the ADMIN credentials
+    */
     const resource = 'programs'
     const url = process.env.ACTIONHUB_API_HOST + resource
     const response = await fetch(url, {
@@ -82,7 +90,6 @@ async function createProgram () {
       actionHubKey,
       permissions
     })
-
   } else {
     // use the program details we got
     console.log(program)
@@ -104,9 +111,12 @@ async function createProgram () {
   )
   // Next step
   await createMetafields()
-  Promise.resolve()
+  return true
 }
 
+/*
+STEP 2
+*/
 async function createMetafields () {
   /*
     Create the metafields that will hold the ActionHub segments
@@ -118,6 +128,7 @@ async function createMetafields () {
     OnboardingStep.CreateMetaFields
   )
 
+  // Send the GraphQL query...
   const query = `
     mutation CreateMetafieldDefinition($definition: MetafieldDefinitionInput!) {
       metafieldDefinitionCreate(definition: $definition) {
@@ -143,7 +154,6 @@ async function createMetafields () {
     }
   }
   const response = await shopify.graphql(query, variables)
-  // TODO: do something with the response for error chceking
 
   // Log status
   await ActionHubDB.endOnboardingStatus(
@@ -152,9 +162,12 @@ async function createMetafields () {
   )
   // Next step
   await imoprtProducts()
-  Promise.resolve()
+  return true
 }
 
+/*
+STEP 3
+*/
 async function imoprtProducts () {
   /*
     Create assets in ActionHub from shop products.
@@ -175,8 +188,8 @@ async function imoprtProducts () {
       shopName,
       OnboardingStep.WarningNoProducts
     )
-    Promise.resolve();
-    return false;
+    Promise.resolve()
+    return false
   }
 
   // Build the body for posting to ActionHub
@@ -208,17 +221,27 @@ async function imoprtProducts () {
     },
     body: JSON.stringify(new_assets)
   })
-
-  const result = await response.json()
-  // TODO: do something with the result for error chceking
+  if (response.status !== 200) {
+    // Log the error
+    const data = await response.json()
+    await ActionHubDB.startOnboardingStatus(
+      shopName,
+      OnboardingStep.ErrorAssets,
+      data.detail
+    )
+    return false
+  }
 
   // Log status
   await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.ImportProducts)
   // Next step
   await importOrders()
-  Promise.resolve()
+  return true
 }
 
+/*
+STEP 4
+*/
 async function importOrders () {
   /*
     Import orders from Shopify and post to ActionHub as events
@@ -235,63 +258,171 @@ async function importOrders () {
       shopName,
       OnboardingStep.WarningNoOrders
     )
-    Promise.resolve();
-    return false;
+    return false
   }
 
-  // HERE NEXT...
-
-  console.log(JSON.stringify(orders))
+  // Build out the events from the orders
+  let events = []
   for (const order of orders) {
-    console.log(JSON.stringify(order))
+    for (const item in order.line_items) {
+      const event = {
+        user_id: order.customer.id,
+        event_timestamp: order.created_at,
+        event_type: 'buy',
+        asset_id: order.line_items[item].product_id,
+        labels: order.tags.split(',')
+      }
+      events.push(event)
+    }
+    const query = `
+    {
+      order(id: "gid://shopify/Order/${order.id}") {
+        id
+        customerJourneySummary {
+          firstVisit {
+            landingPage 
+            referrerUrl 
+            source 
+            sourceType
+            occurredAt 
+          }
+          lastVisit {
+            landingPage 
+            referrerUrl 
+            source 
+            sourceType
+            occurredAt 
+          }
+          ready 
+        }
+      }
+    }`
+    const response = await shopify.graphql(query)
+    if (response.order.customerJourneySummary.firstVisit) {
+      // Get last visit as event
+      console.log(response.order.customerJourneySummary.firstVisit)
+      const journey = response.order.customerJourneySummary
+      const event = {
+        user_id: order.customer.id,
+        event_timestamp: journey.firstVisit.occurredAt,
+        event_type: 'visit',
+        asset_id: journey.firstVisit.landingPage,
+        labels: order.tags.split(',')
+      }
+      events.push(event)
+    }
+    if (response.order.customerJourneySummary.lastVisit) {
+      // Get last visit as event
+      console.log(response.order.customerJourneySummary.lastVisit)
+      const journey = response.order.customerJourneySummary
+      const event = {
+        user_id: order.customer.id,
+        event_timestamp: journey.lastVisit.occurredAt,
+        event_type: 'visit',
+        asset_id: journey.lastVisit.landingPage,
+        labels: order.tags.split(',')
+      }
+      events.push(event)
+    }
+    if (events.length >= 100) {
+      const result = await __postEvents(events)
+      if (!result) {
+        return false
+      }
+      // Clear for next round
+      events = []
+    }
   }
 
-  // const assets = [];
-  // for (const product of products) {
-  //   const assetId = product.id;
-  //   const assetName = product.title;
-  //   const tags = product.tags.split(',')
-  //   const asset = {
-  //     asset_id: assetId,
-  //     asset_name: assetName,
-  //     labels: tags
-  //   }
-  //   assets.push(asset)
-  // }
+  if (events.length > 0) {
+    const result = await __postEvents(events)
+    if (!result) {
+      return false
+    }
+  }
 
   // Log status
   await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.ImportOrders)
   // Next step
   await generateGlobals()
-  Promise.resolve()
+  return true
 }
 
+/*
+  STEP 5
+*/
 async function generateGlobals () {
   // Log status
   process.send('starting "generate_globals"')
-  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
+  await ActionHubDB.startOnboardingStatus(
+    shopName,
+    OnboardingStep.GenerateGlobals
+  )
 
   // Log status
-  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
+  await ActionHubDB.endOnboardingStatus(
+    shopName,
+    OnboardingStep.GenerateGlobals
+  )
   // Next step
   await generateActions()
-  Promise.resolve()
+  return true
 }
 
+/*
+  STEP 6
+*/
 async function generateActions () {
   // Log status
   process.send('starting "generate_actions"')
-  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
+  await ActionHubDB.startOnboardingStatus(
+    shopName,
+    OnboardingStep.GenerateGlobals
+  )
 
   // Log status
-  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
+  await ActionHubDB.endOnboardingStatus(
+    shopName,
+    OnboardingStep.GenerateGlobals
+  )
   // Done!
   await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.Complete)
-  Promise.resolve()
+  return true
 }
 
-process.on('message', message => {
-
-})
+process.on('message', message => {})
 
 // process.exit()
+
+async function __postEvents (events) {
+  // Prepare for the API calls
+  const params = new URLSearchParams({
+    queue_updates: false,
+    process_user_actions: false
+  })
+  const resource = 'events?'
+  const url = process.env.ACTIONHUB_API_HOST + resource + params
+
+  // POST the events
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'actionhub-key': actionHubKey,
+      'program-id': programId
+    },
+    // body: JSON.stringify({events: events})
+    body: JSON.stringify({ events: events })
+  })
+  if (response.status !== 200) {
+    // Log the error
+    const data = await response.json()
+    await ActionHubDB.startOnboardingStatus(
+      shopName,
+      OnboardingStep.ErrorOrders,
+      data.detail
+    )
+    return false
+  }
+  return true
+}

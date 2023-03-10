@@ -47,30 +47,30 @@ export const ActionHubDB = {
   },
 
   startOnboardingStatus: async function(
-    shopName, stepId
+    shopName, stepId, detail=''
   ) {
     await this.ready;
     const query = `
       insert into shops.fact_onboarding_steps 
-      (shop_name, step_id)
-      values ($1, $2)
+      (shop_name, step_id, detail)
+      values ($1, $2, $3)
     `
-    const values = [shopName, stepId]
+    const values = [shopName, stepId, detail]
     const results = await this.__query(query, values);
     return true;
   },
 
   endOnboardingStatus: async function(
-    shopName, stepId
+    shopName, stepId, detail=''
   ) {
     await this.ready;
     const query = `
       update shops.fact_onboarding_steps 
-      set ts_complete = current_timestamp
-      where shop_name = $1
-      and step_id = $2
+      set ts_complete = current_timestamp, detail = $1
+      where shop_name = $2
+      and step_id = $3
     `
-    const values = [shopName, stepId]
+    const values = [detail, shopName, stepId]
     const results = await this.__query(query, values);
     return true;
   },
@@ -80,7 +80,7 @@ export const ActionHubDB = {
   }) {
     await this.ready;
     const query = `
-      select f.step_id, d.step_message, d.step_progress
+      select f.step_id, d.step_message, d.step_progress, f.detail
       from shops.fact_onboarding_steps f
         inner join shops.dim_onboarding_steps d
           ON d.step_id = f.step_id
