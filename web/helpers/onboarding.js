@@ -269,10 +269,10 @@ async function importOrders () {
 async function generateGlobals () {
   // Log status
   process.send('starting "generate_globals"')
-  await ActionHubDB.startOnboardingStatus(shopName, 'generate_globals')
+  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
 
   // Log status
-  await ActionHubDB.endOnboardingStatus(shopName, 'generate_globals')
+  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
   // Next step
   await generateActions()
   Promise.resolve()
@@ -281,12 +281,12 @@ async function generateGlobals () {
 async function generateActions () {
   // Log status
   process.send('starting "generate_actions"')
-  await ActionHubDB.startOnboardingStatus(shopName, 'generate_actions')
+  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
 
   // Log status
-  await ActionHubDB.endOnboardingStatus(shopName, 'generate_actions')
-  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.Complete)
+  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
   // Done!
+  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.Complete)
   Promise.resolve()
 }
 
