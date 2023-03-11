@@ -146,7 +146,7 @@ export function SegmentsIndex (props) {
             Orders are required for generating recommendation segments.`
       image = fileHost + '/images/shopify-empty-state-2.jpg'
     } else if (onboardingState.step_id.startsWith('error')) {
-      // Onboarding in progress
+      // Error occurred during omboarding
       heading = 'Error during integration'
       msg = `ActionHub encountered an error during integrtaion. 
             Segments count not be generated.`
@@ -169,6 +169,7 @@ export function SegmentsIndex (props) {
             You can manually recalulate segments using the Refresh Segments button.`
       image = fileHost + '/images/shopify-empty-state-2.jpg'
     }
+
     return { msg: msg, image: image, heading: heading }
   }
 
@@ -303,7 +304,7 @@ export function SegmentsIndex (props) {
         <Modal
           open={confirmSync}
           onClose={handleSyncClose}
-          title='Confirm: Sync Selected Segments?'
+          title='Confirm: Sync selected segments?'
           primaryAction={{
             content: 'Do it!',
             onAction: handleSyncSegments
@@ -328,7 +329,7 @@ export function SegmentsIndex (props) {
         <Modal
           open={confirmRefresh}
           onClose={handleRefreshClose}
-          title='Confirm: Refresh Store Segments?'
+          title='Confirm: Refresh customer segments?'
           primaryAction={{
             content: 'Do it!',
             onAction: handleRefreshSegments

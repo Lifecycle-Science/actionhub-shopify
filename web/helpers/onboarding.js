@@ -10,7 +10,7 @@ const OnboardingStep = {
   CreateMetaFields: 'create_metafields',
   ImportProducts: 'import_products',
   ImportOrders: 'import_orders',
-  GenerateGlobals: 'generate_global',
+  GenerateGlobals: 'generate_globals',
   GenerateActions: 'generate_actions',
   Complete: 'complete',
   WarningNoProducts: 'warning_no_products',
@@ -64,7 +64,7 @@ async function createProgram () {
     /*
       This is the only function that should require the ADMIN credentials
     */
-    const resource = 'programs'
+    const resource = '/programs'
     const url = process.env.ACTIONHUB_API_HOST + resource
     const response = await fetch(url, {
       method: 'POST',
@@ -210,7 +210,7 @@ async function imoprtProducts () {
   const new_assets = {
     assets: assets
   }
-  const resource = 'assets'
+  const resource = '/assets'
   const url = process.env.ACTIONHUB_API_HOST + resource
   const response = await fetch(url, {
     method: 'POST',
@@ -344,50 +344,78 @@ async function importOrders () {
   // Log status
   await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.ImportOrders)
   // Next step
-  await generateGlobals()
-  return true
-}
-
-/*
-  STEP 5
-*/
-async function generateGlobals () {
-  // Log status
-  process.send('starting "generate_globals"')
-  await ActionHubDB.startOnboardingStatus(
-    shopName,
-    OnboardingStep.GenerateGlobals
-  )
-
-  // Log status
-  await ActionHubDB.endOnboardingStatus(
-    shopName,
-    OnboardingStep.GenerateGlobals
-  )
-  // Next step
-  await generateActions()
-  return true
-}
-
-/*
-  STEP 6
-*/
-async function generateActions () {
-  // Log status
-  process.send('starting "generate_actions"')
-  await ActionHubDB.startOnboardingStatus(
-    shopName,
-    OnboardingStep.GenerateGlobals
-  )
-
-  // Log status
-  await ActionHubDB.endOnboardingStatus(
-    shopName,
-    OnboardingStep.GenerateGlobals
-  )
-  // Done!
+  await generateGraphs()
+  // Done! Log it!
   await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.Complete)
+
   return true
+}
+
+/*
+  STEP 5/6
+*/
+function generateGraphs () {
+  // Log status (not waiting)
+  process.send('starting "generate_globals"')
+  ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
+
+  // Gonna make some API calls
+  const headers = {
+    'Content-Type': 'application/json',
+    'actionhub-key': actionHubKey,
+    'program-id': programId
+  }
+
+  return new Promise((resolve, reject) => {
+    // Start the rebase (not waiting)
+    const url = process.env.ACTIONHUB_API_HOST + '/program/rebase'
+    console.log(url)
+    fetch(url, {
+      method: 'PUT',
+      headers: headers
+    })
+      .then(response => response.json())
+      .then(rebase_data => {
+        console.log(rebase_data)
+        // Rebase started, now check status
+        let programStatus = 'none'
+        let intervalId = setInterval(function () {
+          // Check API for the updates
+          fetch(process.env.ACTIONHUB_API_HOST + '/program/status', {
+            method: 'GET',
+            headers: headers
+          })
+            .then(response => response.json())
+            .then(data => {
+              if (data?.status_id !== programStatus) {
+                if (
+                  data?.status_id.startsWith('program_user_graph') &&
+                  !programStatus.startsWith('program_user_graph')
+                ) {
+                  ActionHubDB.endOnboardingStatus(
+                    shopName,
+                    OnboardingStep.GenerateGlobals
+                  )
+                  ActionHubDB.startOnboardingStatus(
+                    shopName,
+                    OnboardingStep.GenerateActions
+                  )
+                }
+                programStatus = data.status_id
+              }
+
+              if (data?.status_id === 'program_user_graph_complete') {
+                ActionHubDB.endOnboardingStatus(
+                  shopName,
+                  OnboardingStep.GenerateActions
+                )
+                clearInterval(intervalId)
+                resolve(data)
+              }
+            })
+        }, 1000)
+      })
+  })
 }
 
 process.on('message', message => {})
@@ -400,7 +428,7 @@ async function __postEvents (events) {
     queue_updates: false,
     process_user_actions: false
   })
-  const resource = 'events?'
+  const resource = '/events?'
   const url = process.env.ACTIONHUB_API_HOST + resource + params
 
   // POST the events
