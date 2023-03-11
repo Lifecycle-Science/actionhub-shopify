@@ -123,39 +123,53 @@ export function SegmentsIndex (props) {
   } = useIndexResourceState(segments)
 
   const emptyStateMessage = onboardingState => {
+    /*
+        Lots of reasons why there might not be segments.
+        Most have to do with some part of the onboarding process.
+    */
     let heading = ''
     let msg = ''
     let image = ''
+    const fileHost =
+      'https://lifecycle-science-public-files.s3.us-west-2.amazonaws.com'
+
     if (onboardingState.step_id == 'warning_no_products') {
+      // No products
       heading = 'No segments available'
-      msg =
-        'ActionHub could not find products in your shop. Products are required for generating recommendation segments.'
-      image =
-        'https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
+      msg = `ActionHub could not find products in your shop. 
+            Products are required for generating recommendation segments.`
+      image = fileHost + '/images/shopify-empty-state-2.jpg'
     } else if (onboardingState.step_id == 'warning_no_orders') {
+      // No orders
       heading = 'No segments available'
-      msg =
-        'ActionHub could not find orders in your shop. Orders are required for generating recommendation segments.'
-      image =
-        'https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
-    } else if (onboardingState.step_process < 100) {
+      msg = `ActionHub could not find orders in your shop. 
+            Orders are required for generating recommendation segments.`
+      image = fileHost + '/images/shopify-empty-state-2.jpg'
+    } else if (onboardingState.step_id.startsWith('error')) {
+      // Error occurred during omboarding
+      heading = 'Error during integration'
+      msg = `ActionHub encountered an error during integrtaion. 
+            Segments count not be generated.`
+      image = fileHost + '/images/shopify-empty-state-2.jpg'
+    } else if (onboardingState.step_progress < 100) {
+      // Onboarding in progress
       heading = 'Installation in progress'
-      msg =
-        'ActionHub is setting up and running models. Segments should be available soon.'
-      image =
-        'https://lifecycle-science-public-files.s3.us-west-2.amazonaws.com/images/shopify-loading-state-1.gif'
+      msg = `ActionHub is setting up and running models. 
+              Segments should be available soon.`
+      image = fileHost + '/images/shopify-loading-state-1.gif'
     } else if (isLoading) {
+      // Results loading
       heading = 'Searching for segments'
       msg = 'ActionHub is looking for your segments.'
-      image =
-        'https://lifecycle-science-public-files.s3.us-west-2.amazonaws.com/images/shopify-loading-state-1.gif'
+      image = fileHost + '/images/shopify-loading-state-1.gif'
     } else {
+      // No segments
       heading = 'No segments available'
-      msg =
-        'ActionHub could not find segments in your shop. You can manually recalulate segments using the Refresh Segments button.'
-      image =
-        'https://d16psxtdnnlwyt.cloudfront.net/images/shopify-empty-state-2.jpg'
+      msg = `ActionHub could not find segments in your shop. 
+            You can manually recalulate segments using the Refresh Segments button.`
+      image = fileHost + '/images/shopify-empty-state-2.jpg'
     }
+
     return { msg: msg, image: image, heading: heading }
   }
 
@@ -163,7 +177,6 @@ export function SegmentsIndex (props) {
     <EmptyState
       heading={emptyStateMessage(props.onboardingState).heading}
       image={emptyStateMessage(props.onboardingState).image}
-      //   withIllustration
     >
       <p>{emptyStateMessage(props.onboardingState).msg}</p>
     </EmptyState>
@@ -291,7 +304,7 @@ export function SegmentsIndex (props) {
         <Modal
           open={confirmSync}
           onClose={handleSyncClose}
-          title='Confirm: Sync Selected Segments?'
+          title='Confirm: Sync selected segments?'
           primaryAction={{
             content: 'Do it!',
             onAction: handleSyncSegments
@@ -316,7 +329,7 @@ export function SegmentsIndex (props) {
         <Modal
           open={confirmRefresh}
           onClose={handleRefreshClose}
-          title='Confirm: Refresh Store Segments?'
+          title='Confirm: Refresh customer segments?'
           primaryAction={{
             content: 'Do it!',
             onAction: handleRefreshSegments

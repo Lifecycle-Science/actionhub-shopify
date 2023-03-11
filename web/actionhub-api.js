@@ -12,7 +12,7 @@ export const ActionHubAPI = {
 
   getProgram: async function() {
       await this.ready
-      const resource = 'program'
+      const resource = '/program'
       const url = this.host + resource
       const response = await fetch(url, {
         headers: this.headers
@@ -25,7 +25,7 @@ export const ActionHubAPI = {
       get segments
     */
     await this.ready
-    const resource = 'segments?'
+    const resource = '/segments?'
     const params = new URLSearchParams({
       segment_basis: segment_basis,
       min_weight: min_weight,

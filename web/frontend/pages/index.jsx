@@ -1,7 +1,5 @@
 import { useNavigate, TitleBar, Loading } from '@shopify/app-bridge-react'
-import {
-  Page,
-} from '@shopify/polaris'
+import { Page } from '@shopify/polaris'
 import { useState } from 'react'
 
 import { SegmentsIndex } from '../components'
@@ -14,17 +12,18 @@ export default function HomePage () {
     navigate within the embedded app and keep the browser in sync on reload.
   */
   const defaultOnboardingState = {
-    step_id: "loading",
-    step_message: "",
+    step_id: 'loading',
+    step_message: '',
     step_progress: 0
   }
   const [onboardingState, setOnboardingState] = useState(defaultOnboardingState)
-  const handleOnboardingStep = (currentStep) => {
+
+  const handleOnboardingStep = currentStep => {
     setOnboardingState(currentStep)
-  };
+  }
 
   const navigate = useNavigate()
-  
+
   /*
     Use Polaris Page and TitleBar components to create the page layout,
     and include the empty state contents set above.
@@ -39,7 +38,7 @@ export default function HomePage () {
         // }}
       />
       <OnboardingProgress onOnboardingStep={handleOnboardingStep} />
-      <SegmentsIndex onboardingState={onboardingState}/>
+      <SegmentsIndex onboardingState={onboardingState} />
     </Page>
   )
 }

@@ -4,7 +4,6 @@ import { ActionHubDB } from '../actionhub-db.js'
 import { fork } from 'child_process'
 import { ActionHubAPI } from '../actionhub-api.js'
 
-
 export default function applyActionHubAppEndpoints (app) {
   ActionHubDB.init()
 
@@ -14,8 +13,8 @@ export default function applyActionHubAppEndpoints (app) {
     /*
       get program details
     */
-    const shop_name = res.locals.shopify.session.shop
-    await ActionHubAPI.init(shop_name)
+    const shopName = res.locals.shopify.session.shop
+    await ActionHubAPI.init(shopName)
     const data = ActionHubAPI.getProgram()
     res.status(200).send(data)
   })
@@ -24,7 +23,7 @@ export default function applyActionHubAppEndpoints (app) {
     /*
       get the segments from ActionHub
     */
-    const shop_name = res.locals.shopify.session.shop
+    const shopName = res.locals.shopify.session.shop
     const segment_basis = req.query?.segment_basis
     const force_refresh = req.query?.force_refresh
     const min_weight = req.query?.min_weight
@@ -40,7 +39,7 @@ export default function applyActionHubAppEndpoints (app) {
     }
 
     // get the ActionHub API response
-    await ActionHubAPI.init(shop_name)
+    await ActionHubAPI.init(shopName)
     const data = await ActionHubAPI.getSegments(
       segment_basis,
       min_weight,
@@ -64,6 +63,17 @@ export default function applyActionHubAppEndpoints (app) {
 
   app.get('/api/segments/sync', async (req, res) => {
     /* something goes here */
+  })
+
+  app.post('/api/onboarding/dismiss', async (req, res) => {
+    /*
+     Set onboarding state to dismess so it is no longer shown 
+    */
+    console.log('disniss!!!')
+    const shopName = res.locals.shopify.session.shop
+    await ActionHubAPI.init(shopName)
+    const result = await ActionHubDB.startOnboardingStatus(shopName, 'dismissed')
+    res.status(200).send(result)
   })
 
   app.get('/api/onboarding', async (req, res) => {
