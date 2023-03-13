@@ -1,3 +1,4 @@
+import { authenticatedFetch } from '@shopify/app-bridge/utilities'
 import {
   IndexTable,
   LegacyCard,
@@ -11,23 +12,32 @@ import {
 } from '@shopify/polaris'
 import React, { useEffect } from 'react'
 import { useState, useCallback } from 'react'
-import { useAppQuery } from '../hooks'
+import { useAppQuery, useAuthenticatedFetch } from '../hooks'
 
 export function SegmentsIndex (props) {
-  const [confirmSync, setConfirmSync] = useState(false)
-  const [confirmRefresh, setConfirmRefresh] = useState(false)
+  // query attributes
   const [segmentBasis, setSegmentBasis] = useState('labels')
   const [minWeight, setMinWeight] = useState(0.1)
   const [forceRefresh, setForceRefresh] = useState(false)
-
-  /*
-    Use onboarding state to inform messaging about empty state
-    */
+  // modal states
+  const [confirmSync, setConfirmSync] = useState(false)
+  const [confirmRefresh, setConfirmRefresh] = useState(false)
+  // Use onboarding state to inform messaging about empty state
   const [onboardingState, setOnboardingState] = useState(props.onboardingState)
 
+  const fetch = useAuthenticatedFetch()
+
   useEffect(() => {
+    if (props.onboardingState.step_id == 'complete') {
+      /*
+        We'll refresh the first segment on each return visit
+        until the shop dismisses the notification.
+      */
+      setForceRefresh(true)
+    }
     setOnboardingState(props.onboardingState)
   }, [props.onboardingState])
+
   /*
     All the interaction event handlers...
   */
@@ -52,15 +62,6 @@ export function SegmentsIndex (props) {
   }, [])
   const handleRefreshClose = useCallback(value => setConfirmRefresh(false), [])
 
-  // This is the Big One...
-  // Wrapped in modal actions
-  const handleSyncButton = useCallback(value => setConfirmSync(true), [])
-  const handleSyncSegments = useCallback(value => {
-    // TODO - implement this
-    console.log(value)
-  }, [])
-  const handleSyncClose = useCallback(value => setConfirmSync(false), [])
-
   // Documentation content
   const handleSyncLearnMore = useCallback(value => {
     window.open('https://docs.actionhub.ai', '_blank')
@@ -68,7 +69,7 @@ export function SegmentsIndex (props) {
   const handleRefreshLearnMore = useCallback(value => {
     window.open('https://docs.actionhub.ai', '_blank')
   }, [])
-
+ 
   /*
     The call to the back end starts here...
   */
@@ -121,6 +122,28 @@ export function SegmentsIndex (props) {
     allResourcesSelected,
     handleSelectionChange
   } = useIndexResourceState(segments)
+
+    // This is the Big One...
+  // Wrapped in modal actions
+  const handleSyncButton = useCallback(value => setConfirmSync(true), [])
+  const handleSyncSegments = useCallback(value => {
+      // No foreced refresh on filter changes
+      const method = 'POST'
+      const body = {segments: selectedResources}
+      console.log(selectedResources);
+      fetch(`/api/segments/sync`, {
+        method,
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data)
+      })
+    }, [selectedResources])
+
+  const handleSyncClose = useCallback(value => setConfirmSync(false), [])
+
 
   const emptyStateMessage = onboardingState => {
     /*
@@ -197,7 +220,7 @@ export function SegmentsIndex (props) {
         <IndexTable.Cell>
           <Text variant='bodyMd' as='div'>
             {action_type} ({weightMap[minWeight]}) &gt;{' '}
-            {basisMap[segment_basis]} &gt; {name}
+            {basisMap[segment_basis]} &gt; {name.trim()}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
@@ -289,7 +312,7 @@ export function SegmentsIndex (props) {
                   fontWeight='medium'
                   alignment='end'
                 >
-                  Strength
+                  Avg. Relevance
                 </Text>
               )
             },
