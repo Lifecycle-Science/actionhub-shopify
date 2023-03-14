@@ -115,40 +115,23 @@ export default function applyActionHubAppEndpoints (app) {
     }
   })
 
-  // TODO: test this...
-  app.get('/api/segments/installed', async (req, res) => {
+  app.get('/api/segments/sync/status', async (req, res) => {
     /*
-     Set the Action segments that are 
-     already installed by the merchant.
+      Get the status of the segment syncronhzatiom process
     */
-    const client = new shopify.api.clients.Graphql({
-      session: res.locals.shopify.session
-    })
-    query = `
-      query {
-        segments(first: 10, query:"name:ActionHub*") {
-          edges {
-            cursor
-            node {
-              id
-              name
-              default
-              query
-            }
-          }
-          pageInfo {
-            hasNextPage
-            hasPreviousPage
-          }
-        }
-      }`
-    const segments = await client.query({
-      data: {
-        query: query
-      }
-    })
-    console.log(segments.body.data)
-    res.send(segments.body.data)
+      const shopName = res.locals.shopify.session.shop
+    const result = await ActionHubDB.getSegmentSyncStatus(shopName)
+    res.status(200).send(result)
+  })
+
+  app.get('/api/segments/synced', async (req, res) => {
+    /*
+      Get the shop segments that have been synced 
+      between ActionHub and Shopify
+    */
+    const shopName = res.locals.shopify.session.shop
+    const result = await ActionHubDB.getSyncedSegments(shopName)
+    res.status(200).send(result)
   })
 
   app.post('/api/onboarding/dismiss', async (req, res) => {

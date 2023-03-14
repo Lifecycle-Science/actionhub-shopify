@@ -17,7 +17,6 @@ export function ProgramCard() {
   } = useAppQuery({
     url: `/api/program`,
     reactQueryOptions: {
-      /* Disable refetching because the QRCodeForm component ignores changes to its props */
       refetchOnReconnect: false,
     },
   });

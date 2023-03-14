@@ -19,14 +19,15 @@ const shopify = new Shopify({
 })
 await ActionHubAPI.init(shopName)
 
-let segments = {}
+let segments = []
 
 /*
   STEP 1
 */
 async function collectCustomersRecords () {
   // log to log_segment_sync_status
-  const stepProgressMax = 40 // out of 100 for overall sync progress
+  const stepProgressMin = 0 // out of 100 for overall sync progress
+  const stepProgressMax = 20 // out of 100 for overall sync progress
   const result = await ActionHubDB.setSegmentSyncStatus(
     shopName,
     'collecting',
@@ -60,13 +61,13 @@ async function collectCustomersRecords () {
       true
     )
     let segmentsCustomers = result.split('\n')
-    
+
     console.log(
       segmentElements.segment_basis,
       segmentElements.action_type,
       segmentElements.min_weight,
       asset_ids,
-      labels,
+      labels
     )
     console.log(segmentsCustomers)
 
@@ -89,12 +90,13 @@ async function collectCustomersRecords () {
 */
 async function updateCustomerRecords (customersSegments) {
   // log to log_segment_sync_status
-  const stepProgressMax = 40 // out of 100 for overall sync progress
+  const stepProgressMin = 20 // out of 100 for overall sync progress
+  const stepProgressMax = 90 // out of 100 for overall sync progress
   const result = await ActionHubDB.setSegmentSyncStatus(
     shopName,
-    'labelling',
-    'Labelling customers for segment queries',
-    stepProgressMax
+    'labeling',
+    'Labeling customers for segment queries',
+    stepProgressMin
   )
 
   const query = `mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
@@ -114,6 +116,7 @@ async function updateCustomerRecords (customersSegments) {
       }
     }`
 
+  let customerCount = 0
   let metafields = []
   const customerIds = Object.keys(customersSegments)
   for (let customerId of customerIds) {
@@ -124,11 +127,21 @@ async function updateCustomerRecords (customersSegments) {
       namespace: 'actionhub',
       ownerId: `gid://shopify/Customer/${customerId}`,
       type: 'list.single_line_text_field',
-      value: JSON.stringify(customerSegmentIds.split(","))
+      value: JSON.stringify(customerSegmentIds.split(','))
     })
     if (metafields.length == 25) {
+      // Update customers
       const response = await shopify.graphql(query, { metafields: metafields })
       metafields = []
+      // Log the current step status
+      customerCount += 25
+      let stepProgress = ((customerCount/customersSegments.length)*(stepProgressMax-stepProgressMin))+stepProgressMin
+      const result = await ActionHubDB.setSegmentSyncStatus(
+        shopName,
+        'labeling',
+        `${customerCount} of ${customersSegments.length} customers labeled for segment queries`,
+        stepProgress
+      )
     }
   }
   if (metafields.length > 0) {
@@ -147,31 +160,14 @@ async function updateCustomerRecords (customersSegments) {
 async function saveSyncedSegments () {
   // log to log_segment_sync_status
   const stepProgressMax = 90 // out of 100 for overall sync progress
-  const result = await ActionHubDB.setSegmentSyncStatus(
+  let result = await ActionHubDB.setSegmentSyncStatus(
     shopName,
     'saving',
-    'Saving updated segments',
+    'Saving segment state',
     stepProgressMax
   )
 
-    /*
-    save the segments here...
-    */
-
-  let segments_synced = []
-  for (let i in segments) {
-    let segment = segments[i]
-
-    // Use GraphQL to create it
-
-    console.log(segment)
-
-    // Update Auror with a record.
-    let shopifySegmentId = 'na'
-    segments_synced.push([shopName, segment, shopifySegmentId])
-  }
-
-  console.log(segments_synced)
+  result = await ActionHubDB.saveSyncedSegments(shopName, segments)
 
   // We're done!
   const segment_count = segments.length
@@ -179,7 +175,7 @@ async function saveSyncedSegments () {
     shopName,
     'done',
     `Done syncing ${segment_count} segment queries`,
-    0
+    100
   )
   return true
 }

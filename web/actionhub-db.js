@@ -3,6 +3,7 @@
 */
 import shopify from './shopify.js'
 import pg from 'pg'
+import format from 'pg-format'
 
 export const ActionHubDB = {
   db: null,
@@ -82,6 +83,46 @@ export const ActionHubDB = {
     const results = await this.__query(query, values)
     const data = results.rows[0]
     return data
+  },
+
+  saveSyncedSegments: async function (shopName, segments) {
+    await this.ready
+
+    // Delete exising segments
+    let query = `
+      delete from shops.fact_segments_synced 
+      where shop_name = $1
+    `
+    let values = [shopName]
+    let results = await this.__query(query, values)
+
+    // Insert new segments
+    values = []
+    for (let i in segments) {
+      values.push([shopName, segments[i]])
+    }
+    console.log("values")
+    console.log(values)
+
+    query = format(
+      'insert into shops.fact_segments_synced  (shop_name, segment_display_id) values %L',
+      values)
+    console.log(query)
+    results = await this.__query(query)
+    return true
+  },
+
+  getSyncedSegments: async function (shopName) {
+    await this.ready
+    const query = `
+      select shop_name, segment_display_id, ts_synced
+      from shops.fact_segments_synced
+      where shop_name = $1
+      order by segment_display_id
+    `
+    const values = [shopName]
+    const results = await this.__query(query, values)
+    return results.rows
   },
 
   /*
