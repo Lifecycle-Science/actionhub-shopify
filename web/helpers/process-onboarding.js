@@ -25,7 +25,6 @@ let actionHubKey = ''
 const shopName = process.env.HOST
 process.send('starting onboarding:' + shopName)
 
-await ActionHubDB.init()
 let accessToken = ''
 try {
   accessToken = await ActionHubDB.getShopifyAccessToken({ shopName })

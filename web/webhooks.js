@@ -1,52 +1,71 @@
 import { DeliveryMethod } from "@shopify/shopify-api";
 import { ActionHubDB } from "./actionhub-db.js";
 
+
+/*
+These webhooks are in additon the webhooks contained in the gdpr.js file
+
+For topic details see: 
+https://shopify.dev/docs/api/admin-rest/2023-01/resources/webhook#event-topics
+*/
+
 export default {
   /**
-   * Customers can request their data from a store owner. When this happens,
-   * Shopify invokes this webhook.
-   *
-   * https://shopify.dev/docs/apps/webhooks/configuration/mandatory-webhooks#customers-data_request
+   * Occurs whenever a shop has uninstalled the app.
    */
-  CUSTOMERS_DATA_REQUEST: {
+  APP_UNINSTALLED: {
     deliveryMethod: DeliveryMethod.Http,
     callbackUrl: "/api/webhooks",
     callback: async (topic, shop, body, webhookId) => {
       // see docs for payload description
       const payload = JSON.parse(body);
       ActionHubDB.logWebhookCall(topic, shop, payload, webhookId)
+
+      // TODO: delete app stuff
     },
   },
 
   /**
-   * Store owners can request that data is deleted on behalf of a customer. When
-   * this happens, Shopify invokes this webhook.
-   *
-   * https://shopify.dev/docs/apps/webhooks/configuration/mandatory-webhooks#customers-redact
+   * Occurs whenever an order is created.
    */
-  CUSTOMERS_REDACT: {
+  ORDERS_CREATE: {
     deliveryMethod: DeliveryMethod.Http,
     callbackUrl: "/api/webhooks",
     callback: async (topic, shop, body, webhookId) => {
       // see docs for payload description
       const payload = JSON.parse(body);
       ActionHubDB.logWebhookCall(topic, shop, payload, webhookId)
+      // TODO: log the event (and recalc actions)
     },
   },
 
   /**
-   * 48 hours after a store owner uninstalls your app, Shopify invokes this
-   * webhook.
-   *
-   * https://shopify.dev/docs/apps/webhooks/configuration/mandatory-webhooks#shop-redact
+   * Occurs whenever a product is created.
    */
-  SHOP_REDACT: {
+   PRODUCTS_CREATE: {
     deliveryMethod: DeliveryMethod.Http,
     callbackUrl: "/api/webhooks",
     callback: async (topic, shop, body, webhookId) => {
       // see docs for payload description
       const payload = JSON.parse(body);
       ActionHubDB.logWebhookCall(topic, shop, payload, webhookId)
+      // TODO: create the asset and labels
     },
   },
+
+  /**
+   * Occurs whenever a product is updated.
+   */
+   PRODUCTS_UPDATE: {
+    deliveryMethod: DeliveryMethod.Http,
+    callbackUrl: "/api/webhooks",
+    callback: async (topic, shop, body, webhookId) => {
+      // see docs for payload description
+      const payload = JSON.parse(body);
+      ActionHubDB.logWebhookCall(topic, shop, payload, webhookId)
+      // TODO: update the asset name and labels
+    },
+  },
+
 };
+

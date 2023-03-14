@@ -5,12 +5,12 @@ import shopify from './shopify.js'
 import pg from 'pg'
 import format from 'pg-format'
 
+
 export const ActionHubDB = {
-  db: null,
+  pool: null,
   ready: null,
 
   getShopifyAccessToken: async function ({ shopName }) {
-    await this.ready
     const query = `
       select "accessToken" as access_token 
       from public.shopify_sessions
@@ -21,7 +21,6 @@ export const ActionHubDB = {
   },
 
   getActionHubProgram: async function ({ shopName }) {
-    await this.ready
     const query = `
       select shop_name, program_id, actionhub_key, permissions
       from shops.dim_shops
@@ -31,25 +30,21 @@ export const ActionHubDB = {
     return results.rows[0]
   },
 
-  createActionHubShop: async function ({
-    shopName,
-    programId,
-    actionHubKey,
-    permissions
-  }) {
+  /**
+   * Should be called whenever the app recieved a webhook call 
+   */
+  logWebhookCall: async function (topic, shopName, payload, webhookId) {
     const query = `
-    insert into shops.dim_shops (
-      shop_name, program_id, actionhub_key, permissions
-    )
-    values ($1, $2, $3, $4);
+    insert into shops.log_webhook_calls (shop_name, topic, webhook_id, payload)
+    values ($1, $2, $3, $4)
     `
-    const values = [shopName, programId, actionHubKey, permissions]
+    const values = [shopName, topic, webhookId, payload]
     const results = await this.__query(query, values)
     return true
   },
 
-  /*
-    SEGMENT SYNC METHODS
+  /**
+   * SEGMENT SYNC METHODS 
   */
 
   setSegmentSyncStatus: async function (
@@ -58,7 +53,6 @@ export const ActionHubDB = {
     details,
     progress
   ) {
-    await this.ready
     const query = `
       insert into shops.log_segment_sync_status 
       (shop_name, sync_status, details, progress)
@@ -71,7 +65,6 @@ export const ActionHubDB = {
   },
 
   getSegmentSyncStatus: async function (shopName) {
-    await this.ready
     const query = `
       select shop_name, sync_status, details, progress, ts_logged
       from shops.log_segment_sync_status
@@ -86,8 +79,6 @@ export const ActionHubDB = {
   },
 
   saveSyncedSegments: async function (shopName, segments) {
-    await this.ready
-
     // Delete exising segments
     let query = `
       delete from shops.fact_segments_synced 
@@ -113,7 +104,6 @@ export const ActionHubDB = {
   },
 
   getSyncedSegments: async function (shopName) {
-    await this.ready
     const query = `
       select shop_name, segment_display_id, ts_synced
       from shops.fact_segments_synced
@@ -125,12 +115,28 @@ export const ActionHubDB = {
     return results.rows
   },
 
-  /*
-    ONBOARDING METHODS
-  */
+  /**
+   * ONBOARDING METHODS 
+   */
+
+   createActionHubShop: async function ({
+    shopName,
+    programId,
+    actionHubKey,
+    permissions
+  }) {
+    const query = `
+    insert into shops.dim_shops (
+      shop_name, program_id, actionhub_key, permissions
+    )
+    values ($1, $2, $3, $4);
+    `
+    const values = [shopName, programId, actionHubKey, permissions]
+    const results = await this.__query(query, values)
+    return true
+  },
 
   setOnboardingStatus: async function (shopName, stepId, detail = '') {
-    await this.ready
     const query = `
       insert into shops.fact_onboarding_steps 
       (shop_name, step_id, detail)
@@ -142,7 +148,6 @@ export const ActionHubDB = {
   },
 
   getOnboardingStatus: async function ({ shopName, onboardingStatus }) {
-    await this.ready
     const query = `
       select f.step_id, d.step_message, d.step_progress, f.detail
       from shops.fact_onboarding_steps f
@@ -164,8 +169,19 @@ export const ActionHubDB = {
 
   __query: async function (sql, params = []) {
     await this.ready
+    if (!this.pool) {
+    this.pool = new pg.Pool({
+      user: process.env.AWS_AURORA_DB_USERNAME,
+      host: process.env.AWS_AURORA_DB_HOST,
+      database: process.env.AWS_AURORA_DB_DATABASE,
+      password: process.env.AWS_AURORA_DB_PASSWORD,
+      port: 5432
+    })
+  } else {
+    console.log("using pg.pool..")
+  }
     return new Promise((resolve, reject) => {
-      this.db.query(sql, params, (err, result) => {
+      this.pool.query(sql, params, (err, result) => {
         if (err) {
           console.log(err)
           reject(err)
@@ -177,16 +193,6 @@ export const ActionHubDB = {
   },
 
   init: async function () {
-    this.db =
-      this.db ??
-      new pg.Client({
-        user: process.env.AWS_AURORA_DB_USERNAME,
-        host: process.env.AWS_AURORA_DB_HOST,
-        database: process.env.AWS_AURORA_DB_DATABASE,
-        password: process.env.AWS_AURORA_DB_PASSWORD,
-        port: 5432
-      })
-    await this.db.connect()
     this.ready = Promise.resolve()
   },
 

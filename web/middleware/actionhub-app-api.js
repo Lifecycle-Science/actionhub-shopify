@@ -6,7 +6,6 @@ import { ActionHubAPI } from '../actionhub-api.js'
 import { MakeSegmentDisplayId } from '../helpers/segments.js'
 
 export default function applyActionHubAppEndpoints (app) {
-  ActionHubDB.init()
 
   app.use(express.json())
 
@@ -119,7 +118,7 @@ export default function applyActionHubAppEndpoints (app) {
     /*
       Get the status of the segment syncronhzatiom process
     */
-      const shopName = res.locals.shopify.session.shop
+    const shopName = res.locals.shopify.session.shop
     const result = await ActionHubDB.getSegmentSyncStatus(shopName)
     res.status(200).send(result)
   })
@@ -161,7 +160,7 @@ export default function applyActionHubAppEndpoints (app) {
       const result = await ActionHubDB.setOnboardingStatus(shopName, 'start')
 
       // Kick off the child process
-      console.log("shop 1: " + shopName)
+      console.log('shop 1: ' + shopName)
       const child = fork('helpers/process-onboarding.js', [], {
         env: {
           SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,

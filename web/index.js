@@ -6,6 +6,7 @@ import express from "express";
 import serveStatic from "serve-static";
 import shopify from "./shopify.js";
 import GDPRWebhookHandlers from "./gdpr.js";
+import AppWebhookHandlers from "./webhooks.js";
 
 import applyActionHubAppEndpoints from './middleware/actionhub-app-api.js';
 
@@ -30,6 +31,11 @@ app.post(
   shopify.config.webhooks.path,
   // @ts-ignore
   shopify.processWebhooks({ webhookHandlers: GDPRWebhookHandlers })
+);
+app.post(
+  shopify.config.webhooks.path,
+  // @ts-ignore
+  shopify.processWebhooks({ webhookHandlers: AppWebhookHandlers })
 );
 
 // All endpoints after this point will require an active session

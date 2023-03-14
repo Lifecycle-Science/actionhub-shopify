@@ -11,7 +11,6 @@ const shopName = process.env.HOST
 process.send('starting segment sync...')
 process.send(shopName)
 
-await ActionHubDB.init()
 const accessToken = await ActionHubDB.getShopifyAccessToken({ shopName })
 const shopify = new Shopify({
   shopName: shopName,
