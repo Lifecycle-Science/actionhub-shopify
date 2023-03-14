@@ -17,6 +17,7 @@
     "compression": "^1.7.4",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
+    "pg-format": "^1.0.4",
     "qrcode": "^1.5.0",
     "serve-static": "^1.14.1",
     "shopify-api-node": "^3.12.2",

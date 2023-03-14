@@ -7,15 +7,6 @@ import { PostgreSQLSessionStorage } from '@shopify/shopify-app-session-storage-p
 let { restResources } = await import(
   `@shopify/shopify-api/rest/admin/${LATEST_API_VERSION}`
 );
-import sqlite3 from "sqlite3";
-import { join } from "path";
-
-import { QRCodesDB } from "./qr-codes-db.js";
-
-const database = new sqlite3.Database(join(process.cwd(), "database.sqlite"));
-QRCodesDB.db = database;
-QRCodesDB.init();
-
 
 const shopify = shopifyApp({
   api: {

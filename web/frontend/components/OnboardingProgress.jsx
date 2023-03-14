@@ -127,7 +127,6 @@ export function OnboardingProgress (props) {
       body: null,
       headers: { 'Content-Type': 'application/json' }
     })
-
     console.log('dismiss')
   }, [])
 
@@ -144,7 +143,33 @@ export function OnboardingProgress (props) {
       >
         <p>
           ActionHub has been step up and is ready to use.
-          <Link>Learn more about using ActionHub</Link>
+          ActionHub creates customer segments based on personalized 
+          customer recommendations for product purchase
+          and engagement actions.
+          Use these segments in your marketing channels to highlight
+          specific products or collections to the most relevant customers.
+          </p>
+          <p><br/>
+          <b>Getting started:</b>
+          </p>
+          <ol>
+          <li>
+            Use the filters below to find segments you want to use. 
+            You can chose the type (products or tags), and chose the 
+            relevence of the recommendation (Low+, Med, or High).
+          </li>
+          <li>
+            Check the boxes of the segments you want to use in your marketing channels.
+          </li>
+          <li>
+            Click the "Sync Segments" button to add the selected segments to your shop.
+          </li>
+          <li>
+            Once synced, you'll see a 'Use Segment' butten next to your selected segments.
+            You can also visit the customers admin screen and find your segments there.
+          </li>
+          </ol>
+          <p><Link>Learn about ActionHub recommendations and how to use them</Link>
         </p>
       </Banner>
     ) : null

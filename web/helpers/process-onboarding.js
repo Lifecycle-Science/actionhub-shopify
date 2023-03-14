@@ -23,11 +23,16 @@ let programId = ''
 let actionHubKey = ''
 
 const shopName = process.env.HOST
-process.send('starting onboarding...')
-process.send(shopName)
+process.send('starting onboarding:' + shopName)
 
 await ActionHubDB.init()
-const accessToken = await ActionHubDB.getShopifyAccessToken({ shopName })
+let accessToken = ''
+try {
+  accessToken = await ActionHubDB.getShopifyAccessToken({ shopName })
+} catch (error) {
+  console.log(error)
+  process.exit()
+}
 const shopify = new Shopify({
   shopName: shopName,
   accessToken: accessToken
@@ -43,11 +48,7 @@ async function createProgram () {
     Create a new program on the ActionHub platform.
   */
   // Log status
-  process.send('starting ' + OnboardingStep.CreateProgram)
-  await ActionHubDB.startOnboardingStatus(
-    shopName,
-    OnboardingStep.CreateProgram
-  )
+  await ActionHubDB.setOnboardingStatus(shopName, OnboardingStep.CreateProgram)
 
   const program = await ActionHubDB.getActionHubProgram({ shopName })
   if (!program) {
@@ -96,19 +97,6 @@ async function createProgram () {
     programId = program.program_id
     actionHubKey = program.actionhub_key
   }
-  /*
-    Notify the parent so they can put in to global variables
-  */
-  process.send({
-    programId: programId,
-    actionHubKey: actionHubKey
-  })
-
-  // Log status
-  await ActionHubDB.startOnboardingStatus(
-    shopName,
-    OnboardingStep.CreateProgram
-  )
   // Next step
   await createMetafields()
   return true
@@ -122,8 +110,7 @@ async function createMetafields () {
     Create the metafields that will hold the ActionHub segments
   */
   // Log status
-  process.send('starting ' + OnboardingStep.CreateMetaFields)
-  await ActionHubDB.startOnboardingStatus(
+  await ActionHubDB.setOnboardingStatus(
     shopName,
     OnboardingStep.CreateMetaFields
   )
@@ -155,11 +142,6 @@ async function createMetafields () {
   }
   const response = await shopify.graphql(query, variables)
 
-  // Log status
-  await ActionHubDB.endOnboardingStatus(
-    shopName,
-    OnboardingStep.CreateMetaFields
-  )
   // Next step
   await imoprtProducts()
   return true
@@ -174,17 +156,13 @@ async function imoprtProducts () {
     Products include tags.
   */
   // Log status
-  process.send('starting ' + OnboardingStep.ImportProducts)
-  await ActionHubDB.startOnboardingStatus(
-    shopName,
-    OnboardingStep.ImportProducts
-  )
+  await ActionHubDB.setOnboardingStatus(shopName, OnboardingStep.ImportProducts)
 
   // read the products from Shopify
   const products = await shopify.product.list()
   if (products.length == 0) {
     // Can't go on if there are no products
-    await ActionHubDB.startOnboardingStatus(
+    await ActionHubDB.setOnboardingStatus(
       shopName,
       OnboardingStep.WarningNoProducts
     )
@@ -224,7 +202,7 @@ async function imoprtProducts () {
   if (response.status !== 200) {
     // Log the error
     const data = await response.json()
-    await ActionHubDB.startOnboardingStatus(
+    await ActionHubDB.setOnboardingStatus(
       shopName,
       OnboardingStep.ErrorAssets,
       data.detail
@@ -232,8 +210,6 @@ async function imoprtProducts () {
     return false
   }
 
-  // Log status
-  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.ImportProducts)
   // Next step
   await importOrders()
   return true
@@ -247,14 +223,13 @@ async function importOrders () {
     Import orders from Shopify and post to ActionHub as events
   */
   // Log status
-  process.send('starting ' + OnboardingStep.ImportOrders)
-  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.ImportOrders)
+  await ActionHubDB.setOnboardingStatus(shopName, OnboardingStep.ImportOrders)
 
   // Read the orders from Shopify
   const orders = await shopify.order.list()
   if (orders.length == 0) {
     // Can't go on if there are no orders
-    await ActionHubDB.startOnboardingStatus(
+    await ActionHubDB.setOnboardingStatus(
       shopName,
       OnboardingStep.WarningNoOrders
     )
@@ -341,14 +316,10 @@ async function importOrders () {
     }
   }
 
-  // Log status
-  await ActionHubDB.endOnboardingStatus(shopName, OnboardingStep.ImportOrders)
   // Next step
   await generateGraphs()
   // Done! Log it!
-  await ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.Complete)
-
-  return true
+  process.exit()
 }
 
 /*
@@ -356,8 +327,7 @@ async function importOrders () {
 */
 function generateGraphs () {
   // Log status (not waiting)
-  process.send('starting "generate_globals"')
-  ActionHubDB.startOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
+  ActionHubDB.setOnboardingStatus(shopName, OnboardingStep.GenerateGlobals)
 
   // Gonna make some API calls
   const headers = {
@@ -387,16 +357,13 @@ function generateGraphs () {
           })
             .then(response => response.json())
             .then(data => {
+              console.log("status: " + data?.status_id)
               if (data?.status_id !== programStatus) {
                 if (
                   data?.status_id.startsWith('program_user_graph') &&
                   !programStatus.startsWith('program_user_graph')
                 ) {
-                  ActionHubDB.endOnboardingStatus(
-                    shopName,
-                    OnboardingStep.GenerateGlobals
-                  )
-                  ActionHubDB.startOnboardingStatus(
+                  ActionHubDB.setOnboardingStatus(
                     shopName,
                     OnboardingStep.GenerateActions
                   )
@@ -404,13 +371,16 @@ function generateGraphs () {
                 programStatus = data.status_id
               }
 
-              if (data?.status_id === 'program_user_graph_complete') {
-                ActionHubDB.endOnboardingStatus(
+              if (data?.status_id == 'program_user_graph_complete') {
+                console.log("finishing...")
+                ActionHubDB.setOnboardingStatus(
                   shopName,
-                  OnboardingStep.GenerateActions
-                )
-                clearInterval(intervalId)
-                resolve(data)
+                  OnboardingStep.Complete
+                ).then(() => {
+                  console.log("DONE!!!")
+                  clearInterval(intervalId)
+                  resolve(data)  
+                })
               }
             })
         }, 1000)
@@ -419,8 +389,6 @@ function generateGraphs () {
 }
 
 process.on('message', message => {})
-
-// process.exit()
 
 async function __postEvents (events) {
   // Prepare for the API calls
@@ -445,7 +413,7 @@ async function __postEvents (events) {
   if (response.status !== 200) {
     // Log the error
     const data = await response.json()
-    await ActionHubDB.startOnboardingStatus(
+    await ActionHubDB.setOnboardingStatus(
       shopName,
       OnboardingStep.ErrorOrders,
       data.detail

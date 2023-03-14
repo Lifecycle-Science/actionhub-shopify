@@ -31,11 +31,7 @@ export default function HomePage () {
   return (
     <Page fullWidth>
       <TitleBar
-        title='Growth Segments'
-        // primaryAction={{
-        //   content: "Refresh Segments",
-        //   onAction: () => navigate("/qrcodes/new"),
-        // }}
+        title='Manage Growth Recommendation Segments'
       />
       <OnboardingProgress onOnboardingStep={handleOnboardingStep} />
       <SegmentsIndex onboardingState={onboardingState} />
